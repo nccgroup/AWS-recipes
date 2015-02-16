@@ -19,29 +19,30 @@ Service (STS) and MFA-protected API access.
 
 ### aws_configure.py
 
-This tool works similarly to the CLI _aws configure_, but saves values in a
-file under .aws/credentials.no-mfa, instead of the standard .aws/credentials.
-It also allows users to configure their MFA serial token number, such that they
-will no longer have to enter it every time they call the
+This tool works similarly to the _aws configure_ CLI tool, but saves values in
+a different file under _.aws/credentials.no-mfa_, instead of the standard
+_.aws/credentials_. It also allows users to configure their MFA serial token
+number, such that they will no longer have to enter it every time they call the
 Security Token Service (STS).
 
     ./aws_configure
 
-It supports profile and allows creation of multiple profiles via calls like
+Similar to the AWS CLI, it supports profiles:
 
     ./aws_configure --profile isec
 
 ### aws_init_session.py
 
 This tool reads credentials configured in the .aws/credentials.no-mfa file,
-prompts users for their MFA code, and retrieves STS credentials (key id,
-secret, and session token). The short-lived credentials are then saved under
-the "standardized" .aws/credentials file to be accessible to other tools.
+prompts users for their MFA code, and retrieves STS credentials (AWS access key
+ID, AWS secret key, and session token).
 
     ./aws_init_session.py
 
-After calling this function, users of the AWS CLI may just work as if
-MFA-protected API access was not there:
+The STS credentials are then saved under the "standardized" _.aws/credentials_
+file to be accessible to other tools such as the AWS CLI. After initializing
+their STS session, users of the AWS CLI may just work as if MFA-protected API
+access was not there:
 
     aws iam list-users
 
