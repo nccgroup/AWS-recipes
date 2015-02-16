@@ -48,8 +48,10 @@ access was not there:
 
 ### aws_rotate_my_key.py
 
-Because credentials rotation is important, and because it is always overlooked
-by AWS users, iSEC created a tool that does it for you. Just run this tool and
-a new access key will be generate and stored in your .credentials.no-mfa file.
-Your old access key will be deleted.
+Because credentials rotation is important, and because it is almost always
+overlooked by AWS users, iSEC created a tool that does it for you. When you run
+this tool, a new access key will be generate and stored in your
+_.credentials.no-mfa_ file. An STS session using these new credentials will be
+initialized and your old access key will be deleted.
 
+    ./aws_rotate_my_key.py
