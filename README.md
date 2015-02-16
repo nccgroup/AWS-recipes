@@ -9,19 +9,20 @@
 
 ## Session management tools
 
-Because using MFA is currently not convenient to use, iSEC wrote several tools
-to help management of MFA-related credentials. These scripts leverage the
-"standardized" way to manage credentials described on the [AWS
+Because MFA-protected API access is currently not convenient to use for CLI
+users, iSEC wrote several tools to help management of MFA-related credentials.
+These scripts leverage the "standardized" way to manage credentials described
+on the [AWS
 Blog](http://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs),
-and builds on top of it to facilitate integration with MFA-protected API access
-and STS.
+and build on top of it to facilitate integration with the Security Token
+Service (STS) and MFA-protected API access.
 
 ### aws_configure.py
 
-This tool works similarly to the ``aws configure'' CLI tool, but saves values
-in a file under .aws/credentials.no-mfa, instead of the standard
-.aws/credentials. It also allows users to configure their MFA serial token
-number, such that they will no longer have to enter it every time they call the
+This tool works similarly to the CLI _aws configure_, but saves values in a
+file under .aws/credentials.no-mfa, instead of the standard .aws/credentials.
+It also allows users to configure their MFA serial token number, such that they
+will no longer have to enter it every time they call the
 Security Token Service (STS).
 
     ./aws_configure
