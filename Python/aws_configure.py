@@ -36,8 +36,11 @@ def main(args):
         else:
             break
 
-    # Write values to credentials.no-mfa
-    write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = serial, credentials_file = aws_credentials_file_no_mfa)
+    # Write values to credentials or credentials.no-mfa
+    if serial:
+        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = serial, credentials_file = aws_credentials_file_no_mfa)
+    else:
+        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = serial)
 
 
 ########################################
