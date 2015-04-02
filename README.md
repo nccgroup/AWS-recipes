@@ -7,6 +7,11 @@
 1. git submodule init
 1. git submodule update
 
+## Update
+
+1. git pull
+2. git submodule foreach git pull origin master
+
 ## Session management tools
 
 Because MFA-protected API access is currently not convenient to use for CLI
