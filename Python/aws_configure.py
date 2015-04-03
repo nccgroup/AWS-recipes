@@ -24,7 +24,7 @@ def main(args):
 
     # Check for overwrite
     while True:
-        k, s, m, t = read_creds_from_aws_credentials_file(profile_name)
+        k, s, m, t = read_creds_from_aws_credentials_file(profile_name, credentials_file = aws_credentials_file_no_mfa)
         if k or s or m or t:
             if not prompt_4_yes_no('The profile \'%s\' already exists. Do you want to overwrite the existing values' % profile_name):
                 if not prompt_4_yes_no('Do you want to create a new profile with these credentials'):
