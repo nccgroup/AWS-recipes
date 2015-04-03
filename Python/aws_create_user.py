@@ -11,6 +11,7 @@ import fabulous.image
 import gnupg
 import os
 import random
+import re
 import string
 import time
 import zipfile
@@ -23,15 +24,33 @@ def cleanup(iam_connection, user, stage = 0, serial = None):
     print 'Cleaning up...'
     time.sleep(5)
     delete_user(iam_connection, user, stage, serial)
-    if stage >= 4:
-        try:
-            os.remove('%s.png' % user)
-        except:
-            pass
     shutil.rmtree(user)
 
 def generate_password(length = 16):
     return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits + '!@#$%^&*()_+`-=[]{};:,<.>?/\\|') for _ in xrange(length))
+
+def pgp_and_write(user, filename, data):
+    pgp_key = None
+    gpg = gnupg.GPG(gnupghome = os.path.join(os.path.expanduser('~'), '.gnupg'))
+    public_keys = gpg.list_keys()
+    for k in public_keys:
+        uid = k['uids'][0]
+        if re.match('.*%s.*' % user, uid):
+            pgp_key = k
+    if pgp_key:
+        asc_data = gpg.encrypt(data, pgp_key['uids'])
+        if asc_data.ok:
+            with open(os.path.join(user, '%s.pgp' % filename), 'w') as f:
+                f.write(str(asc_data))
+                return
+        else:
+            print 'Error, %s' % asc_data.stderr
+
+    if prompt_4_yes_no('Save unencrypted value'):
+         with open(os.path.join(user, filename), 'w') as f:
+             f.write(data)
+    else:
+        raise Exception("Data discarded, aborting")
 
 
 ########################################
@@ -71,9 +90,7 @@ def main(args):
         # Generate and save a random password
         try:
             password = generate_password()
-            password_file = os.path.join(user, 'password.txt')
-            with open(password_file, 'wt') as f:
-                f.write(password)
+            pgp_and_write(user, 'password.txt', password)
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user)
@@ -125,13 +142,15 @@ def main(args):
 
         # Save and display file
         try:
-            qrcode_file = os.path.join(user, '%s.png' % user)
+            qrcode_file = os.path.join(user, 'qrcode.png')
+            pgp_and_write(user, 'qrcode.png', base64.b64decode(png))
             with open(qrcode_file, 'w') as f:
                 f.write(base64.b64decode(png))
             fabulous.utils.term.bgcolor = 'white'
             print fabulous.image.Image(qrcode_file, 100)
             mfa_code1 = prompt_4_mfa_code()
             mfa_code2 = prompt_4_mfa_code()
+            os.remove(qrcode_file)
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user, 4)
@@ -151,8 +170,7 @@ def main(args):
             for file in files:
                 f.write(os.path.join(root, file))
         f.close()
-
-        # TODO: PGP stuff
+        shutil.rmtree(user)
 
 
 ########################################
