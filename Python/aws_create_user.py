@@ -13,6 +13,7 @@ import os
 import random
 import string
 import time
+import zipfile
 
 
 ########################################
@@ -144,7 +145,14 @@ def main(args):
             cleanup(iam_connection, user, 5)
             return
 
-        # TODO: Zip and PGP stuff
+        # Create a zip archive
+        f = zipfile.ZipFile('%s.zip' % user, 'w')
+        for root, dirs, files in os.walk(user):
+            for file in files:
+                f.write(os.path.join(root, file))
+        f.close()
+
+        # TODO: PGP stuff
 
 
 ########################################
@@ -159,7 +167,7 @@ parser.add_argument('--users',
 
 parser.add_argument('--groups',
                     dest='groups',
-                    default=None,
+                    default=[],
                     nargs='+',
                     help='User name(s) to create')
 
