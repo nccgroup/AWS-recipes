@@ -16,7 +16,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Init STS session
-    init_sts_session(args.profile[0], mfa_code = args.mfa_code[0])
+    init_sts_session_and_save_in_credentials(args.profile[0], mfa_code = args.mfa_code[0])
 
 
 ########################################
