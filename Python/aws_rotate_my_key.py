@@ -23,7 +23,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Arguments
-    profile_name = args.profile_name[0]
+    profile_name = args.profile[0]
     user_name = args.user_name[0]
 
     # Connect to IAM

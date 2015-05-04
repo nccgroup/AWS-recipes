@@ -15,7 +15,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Arguments
-    profile_name = args.profile_name[0]
+    profile_name = args.profile[0]
     if not args.users:
         print "Error, you need to provide at least one user name"
         return

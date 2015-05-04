@@ -15,7 +15,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Arguments
-    profile_name = args.profile_name[0]
+    profile_name = args.profile[0]
 
     # Get values
     key_id = prompt_4_value('AWS Access Key ID: ')
