@@ -68,8 +68,11 @@ def main(args):
         print "Error, you need to provide at least one user name"
         return
 
+    # Read credentials
+    key_id, secret, token = read_creds(args.profile[0])
+
     # Connect to IAM
-    iam_connection = connect_iam(profile_name)
+    iam_connection = connect_iam(key_id, secret, token)
     if not iam_connection:
         return
 
