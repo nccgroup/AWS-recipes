@@ -1,0 +1,1 @@
+Deny all actions if plaintext HTTP is used to access the AWS API

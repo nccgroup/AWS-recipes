@@ -1,0 +1,1 @@
+Deny all actions if no security token was used or if it was issued longer than twelve hours ago
