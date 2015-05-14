@@ -61,11 +61,16 @@ def main(args):
         return
 
     # Save the new key to a temporary file
-    write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp)
+    if session_token:
+        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp)
+    else:
+        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp, use_no_mfa_file = False)
 
     # Init an STS session with the new key
-    print 'Initiating a session with the new access key...'
-    init_sts_session(profile_name, credentials_file = aws_credentials_file_tmp)
+    if session_token:
+        # Init an STS session with the new key
+        print 'Initiating a session with the new access key...'
+        init_sts_session_and_save_in_credentials(profile_name, credentials_file = aws_credentials_file_tmp)
 
     # Confirm that it works
     try:
@@ -80,8 +85,12 @@ def main(args):
         return
 
     # Move temporary file to permanent
-    print 'Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa
-    shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
+    if session_token:
+        print 'Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa
+        shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
+    else:
+        print 'Updating AWS configuration file at %s...' % aws_credentials_file
+        shutil.move(aws_credentials_file_tmp, aws_credentials_file)
 
     print 'Success !'
 
