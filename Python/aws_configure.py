@@ -21,21 +21,18 @@ def main(args):
     key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
     if key_id != None and secret != None and mfa_serial == None and token == None:
         if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuration mfa' % profile_name):
-
-            # Connect to IAM
            iam_connection = connect_iam(key_id, secret, token)
            if not iam_connection:
                return 42
-
-           serial = fetch_from_current_user(iam_connection, key_id, 'arn')
+           mfa_serial = fetch_from_current_user(iam_connection, key_id, 'arn')
     
     # Get values
     if not key_id:
         key_id = prompt_4_value('AWS Access Key ID: ', no_confirm = True)
     if not secret:
         secret = prompt_4_value('AWS Secret Access Key: ', no_confirm = True)
-    if not serial:
-        serial = prompt_4_mfa_serial()
+    if not mfa_serial:
+        mfa_serial = prompt_4_mfa_serial()
 
     # Check for overwrite
     while True:
@@ -52,10 +49,10 @@ def main(args):
             break
 
     # Write values to credentials or credentials.no-mfa
-    if serial:
-        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = serial, credentials_file = aws_credentials_file_no_mfa)
+    if mfa_serial:
+        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial, credentials_file = aws_credentials_file_no_mfa)
     else:
-        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = serial)
+        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
 
 
 ########################################
