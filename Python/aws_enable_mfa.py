@@ -27,7 +27,7 @@ def main(args):
 
     # Fetch the current user name
     print 'Searching for username...'
-    user = fetch_current_user_name(iam_connection, key_id)
+    user = fetch_from_current_user(iam_connection, key_id, 'user_name')
     if not user:
         print 'Error: could not find user name to enable MFA for.'
         return 42

@@ -43,7 +43,7 @@ def main(args):
 
     # Fetch current user name
     if not user_name:
-        user_name = fetch_current_user_name(iam_connection, aws_key_id)
+        user_name = fetch_from_current_user(iam_connection, aws_key_id, 'user_name')
         if not user_name:
             print 'Error'
             return

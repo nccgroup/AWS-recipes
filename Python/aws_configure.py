@@ -17,10 +17,25 @@ def main(args):
     # Arguments
     profile_name = args.profile[0]
 
+    # Check for migration from credentials to credentials.no-mfa
+    key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
+    if key_id != None and secret != None and mfa_serial == None and token == None:
+        if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuration mfa' % profile_name):
+
+            # Connect to IAM
+           iam_connection = connect_iam(key_id, secret, token)
+           if not iam_connection:
+               return 42
+
+           serial = fetch_from_current_user(iam_connection, key_id, 'arn')
+    
     # Get values
-    key_id = prompt_4_value('AWS Access Key ID: ', no_confirm = True)
-    secret = prompt_4_value('AWS Secret Access Key: ', no_confirm = True)
-    serial = prompt_4_mfa_serial()
+    if not key_id:
+        key_id = prompt_4_value('AWS Access Key ID: ', no_confirm = True)
+    if not secret:
+        secret = prompt_4_value('AWS Secret Access Key: ', no_confirm = True)
+    if not serial:
+        serial = prompt_4_mfa_serial()
 
     # Check for overwrite
     while True:
