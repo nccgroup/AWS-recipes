@@ -18,9 +18,9 @@ def main(args):
     profile_name = args.profile[0]
 
     # Get values
-    key_id = prompt_4_value('AWS Access Key ID: ')
-    secret = prompt_4_value('AWS Secret Access Key: ')
-    serial = prompt_4_value('AWS MFA serial: ')
+    key_id = prompt_4_value('AWS Access Key ID: ', no_confirm = True)
+    secret = prompt_4_value('AWS Secret Access Key: ', no_confirm = True)
+    serial = prompt_4_mfa_serial()
 
     # Check for overwrite
     while True:
