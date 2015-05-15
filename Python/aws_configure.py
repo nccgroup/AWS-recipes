@@ -24,8 +24,14 @@ def main(args):
            iam_connection = connect_iam(key_id, secret, token)
            if not iam_connection:
                return 42
-           mfa_serial = fetch_from_current_user(iam_connection, key_id, 'arn')
-    
+           try:
+               user_name = fetch_from_current_user(iam_connection, key_id, 'user_name')
+               mfa_devices = iam_connection.get_all_mfa_devices(user_name)['list_mfa_devices_response']['list_mfa_devices_result']['mfa_devices']
+               mfa_serial = mfa_devices[0]['serial_number']
+           except Exception, e:
+               printException(e)
+               pass
+   
     # Get values
     if not key_id:
         key_id = prompt_4_value('AWS Access Key ID: ', no_confirm = True)
