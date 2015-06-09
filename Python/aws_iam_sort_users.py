@@ -20,7 +20,7 @@ def add_user_to_group(iam_connection, user_info, group, user, dry_run):
 
 def autogroup(user, category_groups, category_regex):
     for i, regex in enumerate(category_regex):
-        if regex.match(user):
+        if regex != None and regex.match(user):
             return category_groups[i]
     return None
 
@@ -71,7 +71,10 @@ def main(args):
     else:
         category_regex = []
         for regex in args.category_regex:
-            category_regex.append(re.compile(regex))
+            if regex != '':
+                category_regex.append(re.compile(regex))
+            else:
+                category_regex.append(None)
 
     # Connect to IAM
     key_id, secret, session_token = read_creds(profile_name)
