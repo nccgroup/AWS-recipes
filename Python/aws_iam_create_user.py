@@ -180,15 +180,17 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
+init_parser()
+saved_args = read_profile_default_args(parser.prog)
+
 parser.add_argument('--users',
                     dest='users',
                     default=None,
                     nargs='+',
                     help='User name(s) to create')
-
 parser.add_argument('--groups',
                     dest='groups',
-                    default=[],
+                    default=set_profile_default(saved_args, 'common_groups', []),
                     nargs='+',
                     help='User name(s) to create')
 
