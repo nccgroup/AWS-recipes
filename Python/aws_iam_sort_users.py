@@ -5,24 +5,12 @@ from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
 # Import third-party packages
-from collections import Counter
 import re
 
 
 ########################################
 ##### Helpers
 ########################################
-
-def add_user_to_group(iam_connection, user_info, group, user, dry_run):
-    if not dry_run:
-        iam_connection.add_user_to_group(group, user)
-    user_info[user]['groups'].append(group)
-
-def autogroup(user, category_groups, category_regex):
-    for i, regex in enumerate(category_regex):
-        if regex != None and regex.match(user):
-            return category_groups[i]
-    return None
 
 def get_group_membership(iam_connection, q, params):
     while True:
@@ -64,17 +52,8 @@ def main(args):
     # Arguments
     profile_name = args.profile[0]
 
-    # Must have as many regex as groups
-    if len(args.category_regex) and len(args.category_groups) != len(args.category_regex):
-        print 'Error: you must provide as many regex as category groups.'
-        return 42
-    else:
-        category_regex = []
-        for regex in args.category_regex:
-            if regex != '':
-                category_regex.append(re.compile(regex))
-            else:
-                category_regex.append(None)
+    # Initialize and compile the list of regular expression for category groups
+    category_regex = init_iam_group_category_regex(args.category_groups, args.category_regex)
 
     # Connect to IAM
     key_id, secret, session_token = read_creds(profile_name)
@@ -122,26 +101,12 @@ def main(args):
                 sys.stdout.write('User \'%s\' does not belong to the mandatory common group \'%s\'. ' % (user, group))
                 if args.force_common:
                     sys.stdout.write('Automatically adding...\n')
-                    add_user_to_group(iam_connection, user_info, group, user, args.dry_run)
+                    add_user_to_group(iam_connection, group, user, user_info, args.dry_run)
                 elif prompt_4_yes_no('Do you want to remediate this now'):
-                    add_user_to_group(iam_connection, user_info, group, user, args.dry_run)
+                    add_user_to_group(iam_connection, group, user, user_info, args.dry_run)
                 sys.stdout.flush()
-        category_memberships = list((Counter(user_info[user]['groups']) & Counter(args.category_groups)).elements())
-        if not len(category_memberships):
-            group = None
-            sys.stdout.write('User \'%s\' does not belong to any of the category group (%s). ' % (user, ', '.join(args.category_groups)))
-            sys.stdout.flush()
-            if len(category_regex):
-                group = autogroup(user, args.category_groups, category_regex)
-                if not group:
-                    sys.stdout.write('Failed to determine the category group based on the user name.\n')
-                else:
-                    sys.stdout.write('Automatically adding...\n')
-                    add_user_to_group(iam_connection, user_info, group, user, args.dry_run)
-                sys.stdout.flush()
-            if not group and prompt_4_yes_no('Do you want to remediate this now'):
-                group = prompt_4_value('Which category group should \'%s\' belong to' % user, choices = args.category_groups, display_choices = True, display_indices = True, is_question = True)
-                add_user_to_group(iam_connection, user_info, group, user, args.dry_run)
+
+        add_user_to_category_group(iam_connection, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
         if args.output_file[0] and f:
             f.write('%s' % user)
             for g in all_checked_groups:

@@ -57,7 +57,7 @@ def pgp_and_write(user, filename, data):
 ##### Main
 ########################################
 
-def main(args):
+def main(args, default_args):
 
     # Configure the debug level
     configPrintException(args.debug)
@@ -75,6 +75,9 @@ def main(args):
     iam_connection = connect_iam(key_id, secret, token)
     if not iam_connection:
         return
+
+    # Initialize and compile the list of regular expression for category groups
+    category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
 
     # Iterate over users
     for user in args.users:
@@ -126,6 +129,9 @@ def main(args):
                 printException(e)
                 cleanup(iam_connection, user, 2)
                 return
+        # Add user to a category group
+        if len(default_args['category_groups']) > 0:
+            add_user_to_category_group(iam_connection, args.groups, default_args['category_groups'], category_regex, user)
 
         # Status
         print 'Enabling MFA for user %s...' % user
@@ -181,7 +187,7 @@ def main(args):
 ########################################
 
 init_parser()
-saved_args = read_profile_default_args(parser.prog)
+default_args = read_profile_default_args(parser.prog)
 
 parser.add_argument('--users',
                     dest='users',
@@ -190,11 +196,11 @@ parser.add_argument('--users',
                     help='User name(s) to create')
 parser.add_argument('--groups',
                     dest='groups',
-                    default=set_profile_default(saved_args, 'common_groups', []),
+                    default=set_profile_default(default_args, 'common_groups', []),
                     nargs='+',
                     help='User name(s) to create')
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    main(args, default_args)
