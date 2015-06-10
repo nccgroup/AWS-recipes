@@ -95,17 +95,7 @@ def main(args):
     test = 0
     for user in user_info:
         print 'Checking configuration of \'%s\'...' % user
-        mandatory_memberships = list((Counter(user_info[user]['groups']) & Counter(args.common_groups)).elements())
-        for group in args.common_groups:
-            if group not in mandatory_memberships:
-                sys.stdout.write('User \'%s\' does not belong to the mandatory common group \'%s\'. ' % (user, group))
-                if args.force_common:
-                    sys.stdout.write('Automatically adding...\n')
-                    add_user_to_group(iam_connection, group, user, user_info, args.dry_run)
-                elif prompt_4_yes_no('Do you want to remediate this now'):
-                    add_user_to_group(iam_connection, group, user, user_info, args.dry_run)
-                sys.stdout.flush()
-
+        add_user_to_common_group(iam_connection, user_info[user]['groups'], args.common_groups, user, args.force_common_group, user_info, args.dry_run)
         add_user_to_category_group(iam_connection, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
         if args.output_file[0] and f:
             f.write('%s' % user)
@@ -143,9 +133,9 @@ parser.add_argument('--category_regex',
                     default=set_profile_default(saved_args, 'category_regex', []),
                     nargs='+',
                     help='Regex used to automatically add users to a category group.')
-parser.add_argument('--force_common',
-                    dest='force_common',
-                    default=set_profile_default(saved_args, 'force_common', False),
+parser.add_argument('--force_common_group',
+                    dest='force_common_group',
+                    default=set_profile_default(saved_args, 'force_common_group', False),
                     action='store_true',
                     help='Automatically add users to the common groups.')
 parser.add_argument('--dry',

@@ -129,6 +129,8 @@ def main(args, default_args):
                 printException(e)
                 cleanup(iam_connection, user, 2)
                 return
+        # Add user to the common group(s)
+        add_user_to_common_group(iam_connection, args.groups, default_args['common_groups'], user, args.force_common_group)
         # Add user to a category group
         if len(default_args['category_groups']) > 0:
             add_user_to_category_group(iam_connection, args.groups, default_args['category_groups'], category_regex, user)
@@ -196,9 +198,14 @@ parser.add_argument('--users',
                     help='User name(s) to create')
 parser.add_argument('--groups',
                     dest='groups',
-                    default=set_profile_default(default_args, 'common_groups', []),
+                    default=[],
                     nargs='+',
                     help='User name(s) to create')
+parser.add_argument('--force_common_group',
+                    dest='force_common_group',
+                    default=set_profile_default(default_args, 'force_common_group', False),
+                    action='store_true',
+                    help='Automatically add users to the common groups.')
 
 args = parser.parse_args()
 
