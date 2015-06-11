@@ -5,9 +5,10 @@ from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
 # Import third-party modules
-import os
 import boto3
 
+import os
+import sys
 
 ########################################
 ##### Globals
@@ -158,4 +159,4 @@ parser.add_argument('--save',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

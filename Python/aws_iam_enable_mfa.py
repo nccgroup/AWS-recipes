@@ -4,6 +4,7 @@
 from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
+import sys
 
 ########################################
 ##### Main
@@ -34,9 +35,6 @@ def main(args):
 
     # Status
     print 'Enabling MFA for user \'%s\'...' % user
-    serial = ''
-    mfa_code1 = ''
-    mfa_code2 = ''
 
     # Create an MFA device
     mfa_serial = enable_mfa(iam_connection, user)
@@ -53,4 +51,4 @@ def main(args):
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

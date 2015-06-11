@@ -4,6 +4,7 @@
 from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
+import sys
 
 ########################################
 ##### Main
@@ -57,4 +58,4 @@ parser.add_argument('--dry',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

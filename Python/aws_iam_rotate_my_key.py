@@ -12,6 +12,7 @@ import boto
 import shutil
 import traceback
 
+import sys
 
 ########################################
 ##### Main
@@ -33,7 +34,7 @@ def main(args):
         iam_connection = boto.connect_iam(aws_access_key_id = session_key_id, aws_secret_access_key = session_secret, security_token = session_token)
     except Exception, e:
         printException(e)
-        return
+        return 42
 
     # Fetch the long-lived key ID if STS credentials are used
     if session_token:
@@ -46,7 +47,7 @@ def main(args):
         user_name = fetch_from_current_user(iam_connection, aws_key_id, 'user_name')
         if not user_name:
             print 'Error'
-            return
+            return 42
 
     # Create the new key
     try:
@@ -58,7 +59,7 @@ def main(args):
         list_access_keys(iam_connection, user_name)
     except Exception, e:
         printException(e)
-        return
+        return 42
 
     # Save the new key to a temporary file
     if session_token:
@@ -82,7 +83,7 @@ def main(args):
         list_access_keys(iam_connection, user_name)
     except Exception, e:
         printException(e)
-        return
+        return 42
 
     # Move temporary file to permanent
     if session_token:
@@ -113,4 +114,4 @@ parser.add_argument('--user_name',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

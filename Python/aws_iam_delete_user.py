@@ -4,6 +4,7 @@
 from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
+import sys
 
 ########################################
 ##### Main
@@ -18,12 +19,12 @@ def main(args):
     profile_name = args.profile[0]
     if not args.users:
         print "Error, you need to provide at least one user name"
-        return
+        return 42
 
     # Connect to IAM
     iam_connection = connect_iam(profile_name)
     if not iam_connection:
-        return
+        return 42
 
     # Iterate over users
     for user in args.users:
@@ -48,4 +49,4 @@ parser.add_argument('--users',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

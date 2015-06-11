@@ -13,6 +13,7 @@ import os
 import random
 import re
 import string
+import sys
 import time
 import zipfile
 
@@ -66,7 +67,7 @@ def main(args):
     profile_name = args.profile[0]
     if not args.users:
         print "Error, you need to provide at least one user name"
-        return
+        return 42
 
     # Read credentials
     key_id, secret, token = read_creds(args.profile[0])
@@ -74,7 +75,7 @@ def main(args):
     # Connect to IAM
     iam_connection = connect_iam(key_id, secret, token)
     if not iam_connection:
-        return
+        return 42
 
     # Iterate over users
     for user in args.users:
@@ -88,7 +89,7 @@ def main(args):
             os.mkdir(user)
         except Exception, e:
             printException(e)
-            return
+            return 42
 
         # Generate and save a random password
         try:
@@ -97,7 +98,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user)
-            return
+            return 42
 
         # Create the new IAM user
         try:
@@ -105,7 +106,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user)
-            return
+            return 42
 
         # Create a login profile
         try:
@@ -115,7 +116,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user, 1)
-            return
+            return 42
 
         # Add user to groups
         for group in args.groups:
@@ -125,7 +126,7 @@ def main(args):
             except Exception, e:
                 printException(e)
                 cleanup(iam_connection, user, 2)
-                return
+                return 42
 
         # Status
         print 'Enabling MFA for user %s...' % user
@@ -141,7 +142,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user, 3)
-            return
+            return 42
 
         # Save and display file
         try:
@@ -157,7 +158,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user, 4)
-            return
+            return 42
 
         # Activate the MFA device
         try:
@@ -165,7 +166,7 @@ def main(args):
         except Exception, e:
             printException(e)
             cleanup(iam_connection, user, 5)
-            return
+            return 42
 
         # Create a zip archive
         f = zipfile.ZipFile('%s.zip' % user, 'w')
@@ -195,4 +196,4 @@ parser.add_argument('--groups',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))

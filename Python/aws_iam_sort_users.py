@@ -6,8 +6,9 @@ from AWSUtils.utils_iam import *
 
 # Import third-party packages
 from collections import Counter
-import re
 
+import re
+import sys
 
 ########################################
 ##### Helpers
@@ -194,4 +195,4 @@ parser.add_argument('--out',
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    sys.exit(main(args))
