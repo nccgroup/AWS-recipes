@@ -58,7 +58,7 @@ def pgp_and_write(user, filename, data):
 ##### Main
 ########################################
 
-def main(args):
+def main(args, default_args):
 
     # Configure the debug level
     configPrintException(args.debug)
@@ -76,6 +76,9 @@ def main(args):
     iam_connection = connect_iam(key_id, secret, token)
     if not iam_connection:
         return 42
+
+    # Initialize and compile the list of regular expression for category groups
+    category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
 
     # Iterate over users
     for user in args.users:
@@ -127,6 +130,11 @@ def main(args):
                 printException(e)
                 cleanup(iam_connection, user, 2)
                 return 42
+        # Add user to the common group(s)
+        add_user_to_common_group(iam_connection, args.groups, default_args['common_groups'], user, args.force_common_group)
+        # Add user to a category group
+        if len(default_args['category_groups']) > 0:
+            add_user_to_category_group(iam_connection, args.groups, default_args['category_groups'], category_regex, user)
 
         # Status
         print 'Enabling MFA for user %s...' % user
@@ -181,19 +189,26 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
+init_parser()
+default_args = read_profile_default_args(parser.prog)
+
 parser.add_argument('--users',
                     dest='users',
                     default=None,
                     nargs='+',
                     help='User name(s) to create')
-
 parser.add_argument('--groups',
                     dest='groups',
                     default=[],
                     nargs='+',
                     help='User name(s) to create')
+parser.add_argument('--force_common_group',
+                    dest='force_common_group',
+                    default=set_profile_default(default_args, 'force_common_group', False),
+                    action='store_true',
+                    help='Automatically add users to the common groups.')
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main(args, default_args))
