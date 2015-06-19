@@ -5,14 +5,11 @@ from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 from AWSUtils.utils_sts import *
 
-# Import the Amazon SDK
+# Import third-party modules
 import boto
-
-# Import other third-party packages
 import shutil
-import traceback
-
 import sys
+import traceback
 
 ########################################
 ##### Main

@@ -6,7 +6,6 @@ from AWSUtils.utils_iam import *
 
 # Import third-party modules
 import boto3
-
 import os
 import sys
 

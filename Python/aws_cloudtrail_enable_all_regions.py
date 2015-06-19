@@ -4,9 +4,8 @@
 from AWSUtils.utils import *
 from AWSUtils.utils_cloudtrail import *
 
-# Import third-party packages
+# Import third-party modules
 from boto import cloudtrail
-
 import sys
 
 ########################################

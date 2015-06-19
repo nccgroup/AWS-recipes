@@ -4,9 +4,8 @@
 from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
-# Import third-party packages
+# Import third-party modules
 from collections import Counter
-
 import re
 import sys
 
