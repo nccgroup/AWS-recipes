@@ -25,7 +25,7 @@ def main(args):
 
     # Connect to IAM
     try:
-        print 'Connecting to AWS IAM...'
+        sys.stdout.write('Connecting to AWS IAM...\n')
         session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
         iam_client = connect_iam(session_key_id, session_secret, session_token)
     except Exception, e:
@@ -40,15 +40,16 @@ def main(args):
 
     # Fetch current user name
     if not user_name:
+        sys.stdout.write('Searching for username...\n')
         user_name = fetch_from_current_user(iam_client, aws_key_id, 'UserName')
         if not user_name:
-            print 'Error'
+            sys.stdout.write('Error: could not find user name to rotate the key for.\n')
             return 42
 
     # Create the new key
     try:
         # Create a new IAM key
-        print 'Creating a new access key for \'%s\'...' % user_name
+        sys.stdout.write('Creating a new access key for \'%s\'...\n' % user_name)
         new_key = iam_client.create_access_key(UserName = user_name)
         new_key_id = new_key['AccessKey']['AccessKeyId']
         new_secret = new_key['AccessKey']['SecretAccessKey']
@@ -66,15 +67,15 @@ def main(args):
     # Init an STS session with the new key
     if session_token:
         # Init an STS session with the new key
-        print 'Initiating a session with the new access key...'
+        sys.stdout.write('Initiating a session with the new access key...\n')
         init_sts_session_and_save_in_credentials(profile_name, credentials_file = aws_credentials_file_tmp)
 
     # Confirm that it works
     try:
-        print 'Verifying access with the new key...'
+        sys.stdout.write('Verifying access with the new key...\n')
         session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
         new_iam_client = connect_iam(session_key_id, session_secret, session_token)
-        print 'Deleting the old access key...'
+        sys.stdout.write('Deleting the old access key...\n')
         new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
         list_access_keys(iam_client, user_name)
     except Exception, e:
@@ -83,25 +84,20 @@ def main(args):
 
     # Move temporary file to permanent
     if session_token:
-        print 'Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa
+        sys.stdout.write('Updating AWS configuration file at %s...\n' % aws_credentials_file_no_mfa)
         shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
     else:
-        print 'Updating AWS configuration file at %s...' % aws_credentials_file
+        sys.stdout.write('Updating AWS configuration file at %s...\n' % aws_credentials_file)
         shutil.move(aws_credentials_file_tmp, aws_credentials_file)
 
-    print 'Success !'
+    sys.stdout.write('Success !')
 
 
 ########################################
 ##### Additional arguments
 ########################################
 
-parser.add_argument('--user_name',
-                    dest='user_name',
-                    default=[''],
-                    nargs='+',
-                    help='Your AWS IAM user name. This script will find it automatically if not provided, but will take longer to run.')
-
+add_iam_argument(parser, 'user_name')
 
 ########################################
 ##### Parse arguments and call main()
