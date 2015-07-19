@@ -7,6 +7,7 @@ from AWSUtils.utils_iam import *
 # Import third-party modules
 import sys
 
+
 ########################################
 ##### Main
 ########################################
@@ -19,22 +20,20 @@ def main(args):
     # Arguments
     profile_name = args.profile[0]
     if not args.users:
-        print "Error, you need to provide at least one user name"
+        printError("Error, you need to provide at least one user name")
         return 42
 
     # Connect to IAM
-    iam_connection = connect_iam(profile_name)
-    if not iam_connection:
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception, e:
+        printException(e)
         return 42
 
     # Iterate over users
     for user in args.users:
-
-        # Status
-        print 'Deleting user %s...' % user
-
-        # Delete user
-        delete_user(iam_connection, user)
+        delete_user(iam_client, user)
 
 
 ########################################

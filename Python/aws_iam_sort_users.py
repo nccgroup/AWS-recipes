@@ -9,21 +9,21 @@ from collections import Counter
 import re
 import sys
 
+
 ########################################
 ##### Helpers
 ########################################
 
-def get_group_membership(iam_connection, q, params):
+def get_group_membership(iam_client, q, params):
     while True:
         try:
             user_info, user = q.get()
-            user_name = user['user_name']
-            groups = iam_connection.get_groups_for_user(user_name)
-            groups = groups['list_groups_for_user_response']['list_groups_for_user_result']['groups']
+            user_name = user['UserName']
+            groups = iam_client.list_groups_for_user(UserName = user_name)['Groups']
             user_info[user_name] = {}
             user_info[user_name]['groups'] = []
             for group in groups:
-                user_info[user_name]['groups'].append(group['group_name'])
+                user_info[user_name]['groups'].append(group['GroupName'])
             show_status(user_info, newline = False)
         except Exception, e:
             printException(e)
@@ -57,13 +57,11 @@ def main(args):
     category_regex = init_iam_group_category_regex(args.category_groups, args.category_regex)
 
     # Connect to IAM
-    key_id, secret, session_token = read_creds(profile_name)
-    if not key_id:
-        print 'Error: could not find AWS credentials. Use the --help option for more information.'
-        return 42
-    iam_connection = connect_iam(key_id, secret, session_token)
-    if not iam_connection:
-        print 'Error: could not connect to IAM.'
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception, e:
+        printException(e)
         return 42
 
     # Create the groups
@@ -71,16 +69,16 @@ def main(args):
         for group in args.common_groups + args.category_groups:
             try:
                 print 'Creating group \'%s\'...' % group
-                iam_connection.create_group(group)
+                iam_client.create_group(GroupName = group)
             except Exception, e:
                 printException(e)
 
     # Download IAM users and their group memberships
     print 'Downloading group membership information...'
     user_info = {}
-    users = handle_truncated_responses(iam_connection.get_all_users, None, ['list_users_response', 'list_users_result'], 'users')
+    users = handle_truncated_responses(iam_client.list_users, {}, 'Users')
     show_status(user_info, total = len(users), newline = False)
-    thread_work(iam_connection, user_info, users, get_group_membership, num_threads = 30)
+    thread_work(iam_client, user_info, users, get_group_membership, num_threads = 30)
     show_status(user_info)
 
     # Output
@@ -96,8 +94,8 @@ def main(args):
     test = 0
     for user in user_info:
         print 'Checking configuration of \'%s\'...' % user
-        add_user_to_common_group(iam_connection, user_info[user]['groups'], args.common_groups, user, args.force_common_group, user_info, args.dry_run)
-        add_user_to_category_group(iam_connection, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
+        add_user_to_common_group(iam_client, user_info[user]['groups'], args.common_groups, user, args.force_common_group, user_info, args.dry_run)
+        add_user_to_category_group(iam_client, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
         if args.output_file[0] and f:
             f.write('%s' % user)
             for g in all_checked_groups:

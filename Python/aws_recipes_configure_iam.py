@@ -23,15 +23,15 @@ def main(args):
     use_found_credentials = False
     key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
     if key_id != None and secret != None and mfa_serial == None and token == None:
-        if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuration mfa' % profile_name):
+        if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuring mfa' % profile_name):
            use_found_credentials = True
-           iam_connection = connect_iam(key_id, secret, token)
-           if not iam_connection:
+           iam_client = connect_iam(key_id, secret, token)
+           if not iam_client:
                return 42
            try:
-               user_name = fetch_from_current_user(iam_connection, key_id, 'user_name')
-               mfa_devices = iam_connection.get_all_mfa_devices(user_name)['list_mfa_devices_response']['list_mfa_devices_result']['mfa_devices']
-               mfa_serial = mfa_devices[0]['serial_number']
+               user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
+               mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
+               mfa_serial = mfa_devices[0]['SerialNumber']
            except Exception, e:
                printException(e)
                pass

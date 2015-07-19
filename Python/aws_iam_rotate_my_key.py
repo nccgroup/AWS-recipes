@@ -10,6 +10,7 @@ import shutil
 import sys
 import traceback
 
+
 ########################################
 ##### Main
 ########################################
@@ -25,9 +26,8 @@ def main(args):
 
     # Connect to IAM
     try:
-        sys.stdout.write('Connecting to AWS IAM...\n')
-        session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
-        iam_client = connect_iam(session_key_id, session_secret, session_token)
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
     except Exception, e:
         printException(e)
         return 42

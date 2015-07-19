@@ -7,6 +7,7 @@ from AWSUtils.utils_iam import *
 # Import third-party modules
 import sys
 
+
 ########################################
 ##### Main
 ########################################
@@ -20,13 +21,12 @@ def main(args):
     profile_name = args.profile[0]
     user_name = args.user_name[0]
 
-    # Read credentials
-    key_id, secret, token = read_creds(args.profile[0])
-
     # Connect to IAM
-    iam_client = connect_iam(key_id, secret, token)
-    if not iam_client:
-        sys.stderr.write('Error: connection to IAM failed.\n')
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception, e:
+        printException(e)
         return 42
 
     # Set the user name

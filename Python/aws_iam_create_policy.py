@@ -5,9 +5,9 @@ from AWSUtils.utils import *
 from AWSUtils.utils_iam import *
 
 # Import third-party modules
-import boto3
 import os
 import sys
+
 
 ########################################
 ##### Globals
@@ -23,9 +23,9 @@ re_aws_account_id = re.compile('AWS_ACCOUNT_ID', re.DOTALL|re.MULTILINE)
 #
 # Get AWS account ID of authenticated user
 #
-def get_aws_account_id(iam_connection):
-    result = iam_connection.get_all_users(max_items = 1)
-    user_arn = result['list_users_response']['list_users_result']['users'][0]['arn']
+def get_aws_account_id(iam_client):
+    result = iam_client.list_users(MaxItems = 1)
+    user_arn = result['Users'][0]['Arn']
     return user_arn.split(':')[4]
 
 
@@ -48,23 +48,16 @@ def main(args):
         print 'Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type
         return 42
 
-    # Read credentials
-    key_id, secret, token = read_creds(args.profile[0])
-    if not key_id:
-        print 'Error: could not find AWS credentials.'
-        return 42
-
     # Connect to IAM
-    iam_connection = connect_iam(key_id, secret, token)
-    if not iam_connection:
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception, e:
+        printException(e)
         return 42
-
-    # Use boto3 to work with policies...
-    if args.is_managed:
-        boto3_session = boto3.session.Session(aws_access_key_id = key_id, aws_secret_access_key = secret, aws_session_token = token)
 
     # Get AWS account ID
-    aws_account_id = get_aws_account_id(iam_connection)
+    aws_account_id = get_aws_account_id(iam_client)
 
     # Create the policies
     for template in args.templates:
@@ -76,7 +69,7 @@ def main(args):
         policy = re_aws_account_id.sub(aws_account_id, policy)
         policy_name = os.path.basename(template).split('.')[0]
         if not args.is_managed:
-            callback = getattr(iam_connection, 'put_' + target_type + '_policy')
+            callback = getattr(iam_client, 'put_' + target_type + '_policy')
             for target in args.targets:
                 try:
                     print 'Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type)
@@ -86,7 +79,6 @@ def main(args):
                     printException(e)
                     pass
         else:
-            iam_connection3 = boto3_session.resource('iam')
             params = {}
             params['PolicyDocument'] = policy
             params['PolicyName'] = policy_name
@@ -102,9 +94,9 @@ def main(args):
                 params['Description'] = prompt_4_value('Enter the policy description:')
             if not args.dry_run:
                 print 'Creating policy \'%s\'...' % (policy_name)
-                new_policy = iam_connection3.meta.client.create_policy(**params)
+                new_policy = iam_client.create_policy(**params)
                 if len(args.targets):
-                    callback = getattr(iam_connection3.meta.client, 'attach_' + target_type + '_policy')
+                    callback = getattr(iam_client, 'attach_' + target_type + '_policy')
                     for target in args.targets:
                         print 'Attaching policy to the \'%s\' IAM %s...' % (target, target_type)
                         params = {}

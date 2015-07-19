@@ -21,10 +21,11 @@ import zipfile
 ########################################
 ##### Helpers
 ########################################
-def cleanup(iam_connection, user, stage = 0, serial = None):
-    print 'Cleaning up...'
+def cleanup(iam_client, user, local_only = False, mfa_serial = None):
+    printInfo('Cleaning up...')
     time.sleep(5)
-    delete_user(iam_connection, user, stage, serial)
+    if not local_only:
+        delete_user(iam_client, user)
     shutil.rmtree(user)
 
 def generate_password(length = 16):
@@ -45,7 +46,7 @@ def pgp_and_write(user, filename, data):
                 f.write(str(asc_data))
                 return
         else:
-            print 'Error, %s' % asc_data.stderr
+            printError('Error, %s' % asc_data.stderr)
 
     if prompt_4_yes_no('Save unencrypted value'):
          with open(os.path.join(user, filename), 'w') as f:
@@ -66,15 +67,15 @@ def main(args, default_args):
     # Arguments
     profile_name = args.profile[0]
     if not args.users:
-        print "Error, you need to provide at least one user name"
+        printError("Error, you need to provide at least one user name")
         return 42
 
-    # Read credentials
-    key_id, secret, token = read_creds(args.profile[0])
-
     # Connect to IAM
-    iam_connection = connect_iam(key_id, secret, token)
-    if not iam_connection:
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception, e:
+        printException(e)
         return 42
 
     # Initialize and compile the list of regular expression for category groups
@@ -84,97 +85,81 @@ def main(args, default_args):
     for user in args.users:
 
         # Status
-        print 'Creating user %s...' % user
+        printInfo('Creating user %s...' % user)
         password = ''
 
         # Prepare the output folder
         try:
             os.mkdir(user)
         except Exception, e:
-            printException(e)
-            return 42
-
-        # Generate and save a random password
-        try:
-            password = generate_password()
-            pgp_and_write(user, 'password.txt', password)
-        except Exception, e:
-            printException(e)
-            cleanup(iam_connection, user)
+            printError('Failed to create a temporary folder for user %s.' % user)
             return 42
 
         # Create the new IAM user
         try:
-            iam_connection.create_user(user)
+            iam_client.create_user(UserName = user)
         except Exception, e:
             printException(e)
-            cleanup(iam_connection, user)
+            cleanup(iam_client, user, True)
             return 42
 
-        # Create a login profile
-        try:
-            # Pending merge of https://github.com/boto/boto/pull/3007
-            # TODO: check boto version once this goes through
-            iam_connection.create_login_profile(user, password) # True)
-        except Exception, e:
-            printException(e)
-            cleanup(iam_connection, user, 1)
-            return 42
+        # Password enabled?
+        if not args.no_password:
+            # Generate and save a random password
+            try:
+                password = generate_password()
+                pgp_and_write(user, 'password.txt', password)
+            except Exception, e:
+                printException(e)
+                cleanup(iam_client, user)
+                return 42
+            # Create a login profile
+            try:
+                iam_client.create_login_profile(UserName = user, Password = password, PasswordResetRequired = True)
+            except Exception, e:
+                printException(e)
+                cleanup(iam_client, user)
+                return 42
 
         # Add user to groups
         for group in args.groups:
             try:
-                print 'Adding user to group %s...' % group
-                iam_connection.add_user_to_group(group, user)
+                printInfo('Adding user to group %s...' % group)
+                iam_client.add_user_to_group(GroupName = group, UserName = user)
             except Exception, e:
                 printException(e)
-                cleanup(iam_connection, user, 2)
+                cleanup(iam_client, user)
                 return 42
         # Add user to the common group(s)
-        add_user_to_common_group(iam_connection, args.groups, default_args['common_groups'], user, args.force_common_group)
+        add_user_to_common_group(iam_client, args.groups, default_args['common_groups'], user, args.force_common_group)
         # Add user to a category group
         if len(default_args['category_groups']) > 0:
-            add_user_to_category_group(iam_connection, args.groups, default_args['category_groups'], category_regex, user)
+            add_user_to_category_group(iam_client, args.groups, default_args['category_groups'], category_regex, user)
 
-        # Status
-        print 'Enabling MFA for user %s...' % user
-        serial = ''
-        mfa_code1 = ''
-        mfa_code2 = ''
+        # MFA enabled?
+        if not args.no_mfa:
+            printInfo('Enabling MFA for user %s...' % user)
+            serial = ''
+            mfa_code1 = ''
+            mfa_code2 = ''
+            # Create an MFA device, Display the QR Code, and activate the MFA device
+            try:
+                mfa_serial = enable_mfa(iam_client, user, '%s/qrcode.png' % user)
+            except Exception, e:
+                cleanup(iam_client, user)
+                return 42
 
-        # Create an MFA device
-        try:
-            mfa_device = iam_connection.create_virtual_mfa_device('/', user)
-            png = mfa_device['create_virtual_mfa_device_response']['create_virtual_mfa_device_result']['virtual_mfa_device']['qr_code_png']
-            serial = mfa_device['create_virtual_mfa_device_response']['create_virtual_mfa_device_result']['virtual_mfa_device']['serial_number']
-        except Exception, e:
-            printException(e)
-            cleanup(iam_connection, user, 3)
-            return 42
-
-        # Save and display file
-        try:
-            qrcode_file = os.path.join(user, 'qrcode.png')
-            pgp_and_write(user, 'qrcode.png', base64.b64decode(png))
-            with open(qrcode_file, 'w') as f:
-                f.write(base64.b64decode(png))
-            fabulous.utils.term.bgcolor = 'white'
-            print fabulous.image.Image(qrcode_file, 100)
-            mfa_code1 = prompt_4_mfa_code()
-            mfa_code2 = prompt_4_mfa_code()
-            os.remove(qrcode_file)
-        except Exception, e:
-            printException(e)
-            cleanup(iam_connection, user, 4)
-            return 42
-
-        # Activate the MFA device
-        try:
-            iam_connection.enable_mfa_device(user, serial, mfa_code1, mfa_code2)
-        except Exception, e:
-            printException(e)
-            cleanup(iam_connection, user, 5)
-            return 42
+        # Access key enabled?
+        if not args.no_access_key:
+            printInfo('Creating a new access key for user %s...' % user)
+            try:
+                access_key = iam_client.create_access_key(UserName = user)['AccessKey']                
+                id_and_secret = 'Access Key ID: %s\nSecret Access Key: %s' % (access_key['AccessKeyId'], access_key['SecretAccessKey'])
+                pgp_and_write(user, 'access_key.txt', id_and_secret)
+            except Exception, e:
+                printException(e)
+                cleanup(iam_client, user)
+                return 42
 
         # Create a zip archive
         f = zipfile.ZipFile('%s.zip' % user, 'w')
@@ -202,11 +187,25 @@ parser.add_argument('--groups',
                     default=[],
                     nargs='+',
                     help='User name(s) to create')
-parser.add_argument('--force_common_group',
+parser.add_argument('--force-common-group',
                     dest='force_common_group',
                     default=set_profile_default(default_args, 'force_common_group', False),
                     action='store_true',
                     help='Automatically add users to the common groups.')
+parser.add_argument('--no_mfa',
+                    dest='no_mfa',
+                    default=set_profile_default(default_args, 'no_mfa', False),
+                    action='store_true',
+                    help='Do not configure and enable MFA.')
+parser.add_argument('--no_password',
+                    default=set_profile_default(default_args, 'no_password', False),
+                    action='store_true',
+                    help='Do not create a login profile and password.')
+parser.add_argument('--no_access_key',
+                    dest='no_access_key',
+                    default=set_profile_default(default_args, 'no_access_key', False),
+                    action='store_true',
+                    help='Do not generate an access key.')
 
 args = parser.parse_args()
 

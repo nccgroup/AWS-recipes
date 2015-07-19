@@ -1,0 +1,1 @@
+Minimal IAM policy to run Scout2 with the default arguments.

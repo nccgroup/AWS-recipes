@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Deny",
+            "Action": "*",
+            "Resource": "*",
+            "Condition": {
+                "Null": {
+                    "aws:MultiFactorAuthAge": "true"
+                }
+            }
+        },
+        {
+            "Effect": "Deny",
+            "Action": "*",
+            "Resource": "*",
+            "Condition": {
+                "NumericGreaterThan": {
+                    "aws:MultiFactorAuthAge": "28800"
+                }
+            }
+        }
+    ]
+}
