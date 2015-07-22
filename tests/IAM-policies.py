@@ -23,7 +23,7 @@ class TestIAMPoliciesClass:
         for filename in files:
             if not filename.endswith('.json'):
                 has_json_extension = False
-                print 'Files under the IAM-policies directory must have a .json extension; %s does not.' %filename
+                print('Files under the IAM-policies directory must have a .json extension; %s does not.' %filename)
         assert has_json_extension
     
     #
@@ -37,7 +37,7 @@ class TestIAMPoliciesClass:
                 with open(os.path.join(self.iam_policy_dir, filename), 'rt') as f:
                     policy = json.load(f)
             except:
-                print '%s is not a valid JSON file' % filename
+                print('%s is not a valid JSON file' % filename)
                 json_load_success = False
                 pass
         assert json_load_success
@@ -52,7 +52,7 @@ class TestIAMPoliciesClass:
             basename = os.path.splitext(filename)[0]
             description_filename = os.path.join(self.description_dir, '%s.txt' % basename)
             if not os.path.isfile(description_filename):
-                print 'IAM policy %s does not have a corresponding description file.' % basename
+                print('IAM policy %s does not have a corresponding description file.' % basename)
                 all_policies_have_a_description = False
         assert all_policies_have_a_description
     
@@ -66,7 +66,6 @@ class TestIAMPoliciesClass:
             basename = os.path.splitext(filename)[0]
             policy_filename = os.path.join(self.iam_policy_dir, '%s.json' % basename)
             if not os.path.isfile(policy_filename):
-                print 'Description file %s does not have a corresponding IAM policy.' % basename
+                print('Description file %s does not have a corresponding IAM policy.' % basename)
                 all_descriptions_have_a_policy = False
         assert all_descriptions_have_a_policy
-
