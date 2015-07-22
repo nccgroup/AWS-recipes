@@ -1,5 +1,7 @@
 # AWS-recipes
 
+[![Build Status](https://travis-ci.org/iSECPartners/AWS-recipes.svg?branch=master)](https://travis-ci.org/iSECPartners/AWS-recipes)
+
 ## Installation
 
 1. Clone this repo
