@@ -38,18 +38,18 @@ def main(args):
     else:
         aws_key_id = session_key_id
 
-    # Fetch current user name
+    # Set the user name
     if not user_name:
-        sys.stdout.write('Searching for username...\n')
+        printInfo('Searching for username...')
         user_name = fetch_from_current_user(iam_client, aws_key_id, 'UserName')
         if not user_name:
-            sys.stdout.write('Error: could not find user name to rotate the key for.\n')
+            printError('Error: could not find user name to rotate the key for.')
             return 42
 
     # Create the new key
     try:
         # Create a new IAM key
-        sys.stdout.write('Creating a new access key for \'%s\'...\n' % user_name)
+        printInfo('Creating a new access key for \'%s\'...' % user_name)
         new_key = iam_client.create_access_key(UserName = user_name)
         new_key_id = new_key['AccessKey']['AccessKeyId']
         new_secret = new_key['AccessKey']['SecretAccessKey']
@@ -67,15 +67,15 @@ def main(args):
     # Init an STS session with the new key
     if session_token:
         # Init an STS session with the new key
-        sys.stdout.write('Initiating a session with the new access key...\n')
+        printInfo('Initiating a session with the new access key...')
         init_sts_session_and_save_in_credentials(profile_name, credentials_file = aws_credentials_file_tmp)
 
     # Confirm that it works
     try:
-        sys.stdout.write('Verifying access with the new key...\n')
+        printInfo('Verifying access with the new key...')
         session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
         new_iam_client = connect_iam(session_key_id, session_secret, session_token)
-        sys.stdout.write('Deleting the old access key...\n')
+        printInfo('Deleting the old access key...')
         new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
         list_access_keys(iam_client, user_name)
     except Exception, e:
@@ -84,13 +84,13 @@ def main(args):
 
     # Move temporary file to permanent
     if session_token:
-        sys.stdout.write('Updating AWS configuration file at %s...\n' % aws_credentials_file_no_mfa)
+        printInfo('Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa)
         shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
     else:
-        sys.stdout.write('Updating AWS configuration file at %s...\n' % aws_credentials_file)
+        printInfo('Updating AWS configuration file at %s...' % aws_credentials_file)
         shutil.move(aws_credentials_file_tmp, aws_credentials_file)
 
-    sys.stdout.write('Success !')
+    printInfo('Success !')
 
 
 ########################################

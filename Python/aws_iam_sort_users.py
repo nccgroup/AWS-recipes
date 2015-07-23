@@ -109,44 +109,32 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
-init_parser()
-saved_args = read_profile_default_args(parser.prog)
+default_args = read_profile_default_args(parser.prog)
 
 parser.add_argument('--create_groups',
                     dest='create_groups',
-                    default=set_profile_default(saved_args, 'create_groups', False),
+                    default=set_profile_default(default_args, 'create_groups', False),
                     action='store_true',
                     help='Create the default groups if they do not exist')
-parser.add_argument('--common_groups',
-                    dest='common_groups',
-                    default=set_profile_default(saved_args, 'common_groups', []),
-                    nargs='+',
-                    help='Groups that all IAM users should belong to.')
-parser.add_argument('--category_groups',
-                    dest='category_groups',
-                    default=set_profile_default(saved_args, 'category_groups', []),
-                    nargs='+',
-                    help='Choice of groups that all IAM users should belong to.')
 parser.add_argument('--category_regex',
                     dest='category_regex',
-                    default=set_profile_default(saved_args, 'category_regex', []),
+                    default=set_profile_default(default_args, 'category_regex', []),
                     nargs='+',
                     help='Regex used to automatically add users to a category group.')
 parser.add_argument('--force_common_group',
                     dest='force_common_group',
-                    default=set_profile_default(saved_args, 'force_common_group', False),
+                    default=set_profile_default(default_args, 'force_common_group', False),
                     action='store_true',
                     help='Automatically add users to the common groups.')
-parser.add_argument('--dry',
-                    dest='dry_run',
-                    default=set_profile_default(saved_args, 'dry_run', False),
-                    action='store_true',
-                    help='Check the status for user but do not take action.')
 parser.add_argument('--out',
                     dest='output_file',
                     default=[ None ],
                     nargs='+',
                     help='Name of the output file.')
+
+add_common_argument(parser, default_args, 'dry')
+add_iam_argument(parser, default_args, 'common_groups')
+add_iam_argument(parser, default_args, 'category_groups')
 
 args = parser.parse_args()
 

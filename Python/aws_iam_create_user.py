@@ -174,7 +174,6 @@ def main(args, default_args):
 ##### Parse arguments and call main()
 ########################################
 
-init_parser()
 default_args = read_profile_default_args(parser.prog)
 
 parser.add_argument('--users',

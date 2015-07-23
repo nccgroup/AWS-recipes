@@ -70,11 +70,15 @@ def main(args):
         policy_name = os.path.basename(template).split('.')[0]
         if not args.is_managed:
             callback = getattr(iam_client, 'put_' + target_type + '_policy')
+            params = {}
+            params['PolicyName'] = policy_name
+            params['PolicyDocument' ] = policy
             for target in args.targets:
+                params[target_type.title() + 'Name'] = target
                 try:
                     print 'Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type)
                     if not args.dry_run:
-                        callback(target, policy_name, policy)
+                        callback(**params)
                 except Exception, e:
                     printException(e)
                     pass
@@ -114,6 +118,8 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
+default_args = read_profile_default_args(parser.prog)
+
 parser.add_argument('--managed',
                     dest='is_managed',
                     default=False,
@@ -136,16 +142,13 @@ parser.add_argument('--templates',
                     nargs='+',
                     required=True,
                     help='Path to the template IAM policies that will be created.')
-parser.add_argument('--dry',
-                    dest='dry_run',
-                    default=False,
-                    action='store_true',
-                    help='Perform only read access.')
 parser.add_argument('--save',
                     dest='save_locally',
                     default=False,
                     action='store_true',
                     help='Generates the policies and store them locally.')
+
+add_common_argument(parser, default_args, 'dry')
 
 args = parser.parse_args()
 

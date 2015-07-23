@@ -37,23 +37,11 @@ def main(args):
 ########################################
 
 init_parser()
-saved_args = read_profile_default_args(parser.prog)
+default_args = read_profile_default_args(parser.prog)
 
-parser.add_argument('--common_groups',
-                    dest='common_groups',
-                    default=set_profile_default(saved_args, 'common_groups', []),
-                    nargs='+',
-                    help='Groups that all IAM users should belong to.')
-parser.add_argument('--category_groups',
-                    dest='category_groups',
-                    default=set_profile_default(saved_args, 'category_groups', []),
-                    nargs='+',
-                    help='Choice of groups that all IAM users should belong to.')
-parser.add_argument('--dry',
-                    dest='dry_run',
-                    default=set_profile_default(saved_args, 'dry_run', False),
-                    action='store_true',
-                    help='Check the status for user but do not take action.')
+add_common_argument(parser, default_args, 'dry')
+add_iam_argument(parser, default_args, 'common_groups')
+add_iam_argument(parser, default_args, 'category_groups')
 
 args = parser.parse_args()
 
