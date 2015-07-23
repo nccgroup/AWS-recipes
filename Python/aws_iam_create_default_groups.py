@@ -39,9 +39,9 @@ def main(args):
 init_parser()
 default_args = read_profile_default_args(parser.prog)
 
-add_common_argument(parser, default_args, 'dry')
-add_iam_argument(parser, default_args, 'common_groups')
-add_iam_argument(parser, default_args, 'category_groups')
+add_common_argument(parser, default_args, 'dry-run')
+add_iam_argument(parser, default_args, 'common-groups')
+add_iam_argument(parser, default_args, 'category-groups')
 
 args = parser.parse_args()
 

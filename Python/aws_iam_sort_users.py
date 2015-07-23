@@ -111,17 +111,17 @@ def main(args):
 
 default_args = read_profile_default_args(parser.prog)
 
-parser.add_argument('--create_groups',
+parser.add_argument('--create-groups',
                     dest='create_groups',
                     default=set_profile_default(default_args, 'create_groups', False),
                     action='store_true',
                     help='Create the default groups if they do not exist')
-parser.add_argument('--category_regex',
+parser.add_argument('--category-regex',
                     dest='category_regex',
                     default=set_profile_default(default_args, 'category_regex', []),
                     nargs='+',
                     help='Regex used to automatically add users to a category group.')
-parser.add_argument('--force_common_group',
+parser.add_argument('--force-common-group',
                     dest='force_common_group',
                     default=set_profile_default(default_args, 'force_common_group', False),
                     action='store_true',
@@ -132,9 +132,9 @@ parser.add_argument('--out',
                     nargs='+',
                     help='Name of the output file.')
 
-add_common_argument(parser, default_args, 'dry')
-add_iam_argument(parser, default_args, 'common_groups')
-add_iam_argument(parser, default_args, 'category_groups')
+add_common_argument(parser, default_args, 'dry-run')
+add_iam_argument(parser, default_args, 'common-groups')
+add_iam_argument(parser, default_args, 'category-groups')
 
 args = parser.parse_args()
 

@@ -66,7 +66,7 @@ def main(args, default_args):
 
     # Arguments
     profile_name = args.profile[0]
-    if not args.users:
+    if not len(args.user_name):
         printError("Error, you need to provide at least one user name")
         return 42
 
@@ -82,7 +82,7 @@ def main(args, default_args):
     category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
 
     # Iterate over users
-    for user in args.users:
+    for user in args.user_name:
 
         # Status
         printInfo('Creating user %s...' % user)
@@ -122,7 +122,7 @@ def main(args, default_args):
                 return 42
 
         # Add user to groups
-        for group in args.groups:
+        for group in args.group_name:
             try:
                 printInfo('Adding user to group %s...' % group)
                 iam_client.add_user_to_group(GroupName = group, UserName = user)
@@ -131,10 +131,10 @@ def main(args, default_args):
                 cleanup(iam_client, user)
                 return 42
         # Add user to the common group(s)
-        add_user_to_common_group(iam_client, args.groups, default_args['common_groups'], user, args.force_common_group)
+        add_user_to_common_group(iam_client, args.group_name, default_args['common_groups'], user, args.force_common_group)
         # Add user to a category group
         if len(default_args['category_groups']) > 0:
-            add_user_to_category_group(iam_client, args.groups, default_args['category_groups'], category_regex, user)
+            add_user_to_category_group(iam_client, args.group_name, default_args['category_groups'], category_regex, user)
 
         # MFA enabled?
         if not args.no_mfa:
@@ -176,35 +176,35 @@ def main(args, default_args):
 
 default_args = read_profile_default_args(parser.prog)
 
-parser.add_argument('--users',
-                    dest='users',
-                    default=None,
-                    nargs='+',
-                    help='User name(s) to create')
-parser.add_argument('--groups',
-                    dest='groups',
+parser.add_argument('--user-name',
+                    dest='user_name',
                     default=[],
                     nargs='+',
-                    help='User name(s) to create')
+                    help='Name of user(s) to be created')
+parser.add_argument('--group-name',
+                    dest='group_name',
+                    default=[],
+                    nargs='+',
+                    help='Name of group(s) that the user(s) will belong to')
 parser.add_argument('--force-common-group',
                     dest='force_common_group',
                     default=set_profile_default(default_args, 'force_common_group', False),
                     action='store_true',
-                    help='Automatically add users to the common groups.')
-parser.add_argument('--no_mfa',
+                    help='Automatically add user(s) to the common group(s)')
+parser.add_argument('--no-mfa',
                     dest='no_mfa',
                     default=set_profile_default(default_args, 'no_mfa', False),
                     action='store_true',
-                    help='Do not configure and enable MFA.')
-parser.add_argument('--no_password',
+                    help='Do not configure and enable MFA')
+parser.add_argument('--no-password',
                     default=set_profile_default(default_args, 'no_password', False),
                     action='store_true',
-                    help='Do not create a login profile and password.')
-parser.add_argument('--no_access_key',
+                    help='Do not create a password and login')
+parser.add_argument('--no-access-key',
                     dest='no_access_key',
                     default=set_profile_default(default_args, 'no_access_key', False),
                     action='store_true',
-                    help='Do not generate an access key.')
+                    help='Do not generate an access key')
 
 args = parser.parse_args()
 

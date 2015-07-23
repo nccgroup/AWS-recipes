@@ -19,7 +19,7 @@ def main(args):
 
     # Arguments
     profile_name = args.profile[0]
-    if not args.users:
+    if not args.user_name:
         printError("Error, you need to provide at least one user name")
         return 42
 
@@ -32,7 +32,7 @@ def main(args):
         return 42
 
     # Iterate over users
-    for user in args.users:
+    for user in args.user_name:
         delete_user(iam_client, user)
 
 
@@ -40,11 +40,11 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
-parser.add_argument('--users',
-                    dest='users',
+parser.add_argument('--user-name',
+                    dest='user_name',
                     default=None,
                     nargs='+',
-                    help='User name(s) to delete')
+                    help='Name of user(s) to be deleted')
 
 args = parser.parse_args()
 

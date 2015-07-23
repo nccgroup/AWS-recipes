@@ -124,31 +124,31 @@ parser.add_argument('--managed',
                     dest='is_managed',
                     default=False,
                     action='store_true',
-                    help='Create a managed policy.')
+                    help='Create a managed policy')
 parser.add_argument('--type',
                     dest='type',
                     default=[ None ],
                     nargs='+',
                     choices=['group', 'managed', 'role', 'user'],
-                    help='Type of target that the policy will apply or be attached to.')
+                    help='Type of target that the policy will apply or be attached to')
 parser.add_argument('--targets',
                     dest='targets',
                     default=[],
                     nargs='+',
-                    help='Name of the IAM entity the policy will be added to (required for inline policies).')
+                    help='Name of the IAM entity the policy will be added to (required for inline policies)')
 parser.add_argument('--templates',
                     dest='templates',
                     default=[],
                     nargs='+',
                     required=True,
-                    help='Path to the template IAM policies that will be created.')
+                    help='Path to the template IAM policies that will be created')
 parser.add_argument('--save',
                     dest='save_locally',
                     default=False,
                     action='store_true',
-                    help='Generates the policies and store them locally.')
+                    help='Generates the policies and store them locally')
 
-add_common_argument(parser, default_args, 'dry')
+add_common_argument(parser, default_args, 'dry-run')
 
 args = parser.parse_args()
 

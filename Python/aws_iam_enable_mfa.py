@@ -18,6 +18,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Arguments
+    print args
     profile_name = args.profile[0]
     user_name = args.user_name[0]
 
@@ -49,7 +50,9 @@ def main(args):
 ##### Additional arguments
 ########################################
 
-add_iam_argument(parser, 'user_name')
+default_args = read_profile_default_args(parser.prog)
+
+add_iam_argument(parser, default_args, 'user-name')
 
 ########################################
 ##### Parse arguments and call main()

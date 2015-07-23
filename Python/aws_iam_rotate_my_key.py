@@ -8,6 +8,7 @@ from AWSUtils.utils_sts import *
 # Import third-party modules
 import shutil
 import sys
+import time
 import traceback
 
 
@@ -34,9 +35,10 @@ def main(args):
 
     # Fetch the long-lived key ID if STS credentials are used
     if session_token:
-        aws_key_id, aws_secret, foo1, foo2 = read_creds_from_aws_credentials_file(profile_name, aws_credentials_file_no_mfa)
+        aws_key_id, aws_secret, foo1 = read_creds(profile_name + '-nomfa')
     else:
-        aws_key_id = session_key_id
+        aws_key_id = key_id
+        aws_secret = secret
 
     # Set the user name
     if not user_name:
@@ -58,46 +60,52 @@ def main(args):
         printException(e)
         return 42
 
-    # Save the new key to a temporary file
+    # Write the new key
     if session_token:
-        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp)
+        write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = new_key_id, secret = new_secret, session_token = None)
     else:
-        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp, use_no_mfa_file = False)
+        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None)
 
-    # Init an STS session with the new key
     if session_token:
         # Init an STS session with the new key
         printInfo('Initiating a session with the new access key...')
-        init_sts_session_and_save_in_credentials(profile_name, credentials_file = aws_credentials_file_tmp)
-
-    # Confirm that it works
-    try:
+        init_sts_session_and_save_in_credentials(profile_name)
+    else:
+        # Sleep because the access key may not be active server-side...
         printInfo('Verifying access with the new key...')
-        session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
-        new_iam_client = connect_iam(session_key_id, session_secret, session_token)
+        time.sleep(5)
+
+    # Confirm that it works...
+    try:
+        new_key_id, new_secret, new_session_token = read_creds(profile_name)
+        new_iam_client = connect_iam(new_key_id, new_secret, new_session_token)
         printInfo('Deleting the old access key...')
         new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
-        list_access_keys(iam_client, user_name)
+    except Exception, e:
+        printException(e)
+        printInfo('Restoring your old credentials...')
+        # Restore the old key here
+        if session_token:
+            write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = aws_key_id, secret = aws_secret, session_token = None)
+        else:
+            write_creds_to_aws_credentials_file(profile_name, key_id = aws_key_id, secret = aws_secret, session_token = None)
+        return 42
+
+    try:
+        list_access_keys(new_iam_client, user_name)
+        printInfo('Success !')
     except Exception, e:
         printException(e)
         return 42
-
-    # Move temporary file to permanent
-    if session_token:
-        printInfo('Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa)
-        shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
-    else:
-        printInfo('Updating AWS configuration file at %s...' % aws_credentials_file)
-        shutil.move(aws_credentials_file_tmp, aws_credentials_file)
-
-    printInfo('Success !')
 
 
 ########################################
 ##### Additional arguments
 ########################################
 
-add_iam_argument(parser, 'user_name')
+default_args = read_profile_default_args(parser.prog)
+
+add_iam_argument(parser, default_args, 'user-name')
 
 ########################################
 ##### Parse arguments and call main()

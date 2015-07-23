@@ -22,7 +22,7 @@ def main(args):
         return 42
 
     # Initialize various lists of regions
-    regions = build_region_list('cloudtrail', args.region_name)
+    regions = build_region_list('cloudtrail', args.region)
     disabled_regions = []
     stopped_regions = []
     global_enabled_regions = []
@@ -88,17 +88,17 @@ def main(args):
 ##### Additional arguments
 ########################################
 
-parser.add_argument('--bucket',
+parser.add_argument('--s3-bucket-name',
                     dest='bucket_name',
                     default=[ None ],
                     nargs='+',
                     help='Name of the destination S3 bucket.')
-parser.add_argument('--prefix',
+parser.add_argument('--s3-key-prefix',
                     dest='s3_key_prefix',
                     default=[ None ],
                     nargs='+',
                     help='Prefix (path) for the log files.')
-parser.add_argument('--sns_topic',
+parser.add_argument('--sns-topic-name',
                     dest='sns_topic_name',
                     default=[ None ],
                     nargs='+',
@@ -109,8 +109,8 @@ parser.add_argument('--force',
                     action='store_true',
                     help='Automatically enable CloudTrail if it is not.')
 
-add_common_argument(parser, 'region')
-add_common_argument(parser, 'dry')
+add_common_argument(parser, {}, 'region')
+add_common_argument(parser, {}, 'dry-run')
 
 ########################################
 ##### Parse arguments and call main()
