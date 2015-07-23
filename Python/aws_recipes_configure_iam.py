@@ -19,7 +19,7 @@ def main(args):
     # Arguments
     profile_name = args.profile[0]
 
-    # Check for migration from credentials to credentials.no-mfa
+    # Check for migration from existing profile to no-mfa profile
     use_found_credentials = False
     key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
     if key_id != None and secret != None and mfa_serial == None and token == None:
@@ -29,6 +29,7 @@ def main(args):
            if not iam_client:
                return 42
            try:
+               printInfo('Trying to read the MFA serial number associated with this IAM user...')
                user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
                mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
                mfa_serial = mfa_devices[0]['SerialNumber']
@@ -43,13 +44,18 @@ def main(args):
     if not mfa_serial:
         mfa_serial = prompt_4_mfa_serial()
 
+    # Update the profile name if an MFA serial number is stored
+    if mfa_serial and not profile_name.endswith('-nomfa'):
+        profile_name = profile_name + '-nomfa'
+        printInfo('Your long-lived credentials will now be available via the %s profile.' % profile_name)
+
     # Check for overwrite
     while True:
-        k, s, m, t = read_creds_from_aws_credentials_file(profile_name, credentials_file = aws_credentials_file_no_mfa)
+        k, s, m, t = read_creds_from_aws_credentials_file(profile_name)
         if k or s or m or t:
             if not prompt_4_yes_no('The profile \'%s\' already exists. Do you want to overwrite the existing values' % profile_name):
                 if not prompt_4_yes_no('Do you want to create a new profile with these credentials'):
-                    print 'Configuration aborted.'
+                    printError('Configuration aborted.')
                     return
                 profile_name = prompt_4_value('Profile name: ')
             else:
@@ -57,11 +63,8 @@ def main(args):
         else:
             break
 
-    # Write values to credentials or credentials.no-mfa
-    if mfa_serial:
-        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial, credentials_file = aws_credentials_file_no_mfa)
-    else:
-        write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
+    # Write values to credentials file
+    write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
 
 
 ########################################
