@@ -6,8 +6,6 @@ from AWSUtils.utils_iam import *
 
 # Import third-party modules
 import base64
-import fabulous.utils
-import fabulous.image
 import gnupg
 import os
 import random
