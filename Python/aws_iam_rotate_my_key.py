@@ -29,7 +29,7 @@ def main(args):
     try:
         key_id, secret, session_token = read_creds(profile_name)
         iam_client = connect_iam(key_id, secret, session_token)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 
@@ -56,7 +56,7 @@ def main(args):
         new_key_id = new_key['AccessKey']['AccessKeyId']
         new_secret = new_key['AccessKey']['SecretAccessKey']
         list_access_keys(iam_client, user_name)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 
@@ -81,7 +81,7 @@ def main(args):
         new_iam_client = connect_iam(new_key_id, new_secret, new_session_token)
         printInfo('Deleting the old access key...')
         new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         printInfo('Restoring your old credentials...')
         # Restore the old key here
@@ -94,7 +94,7 @@ def main(args):
     try:
         list_access_keys(new_iam_client, user_name)
         printInfo('Success !')
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 

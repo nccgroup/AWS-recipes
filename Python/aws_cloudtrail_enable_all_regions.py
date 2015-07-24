@@ -33,7 +33,7 @@ def main(args):
     # Read credentials
     try:
         key_id, secret, token = read_creds(args.profile[0])
-    except Exception, e:
+    except Exception as e:
         return 42
 
     # Iterate through regions and enable CloudTrail and get some info

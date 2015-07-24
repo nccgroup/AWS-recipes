@@ -18,7 +18,7 @@ def main(args):
     # Assume role and store credentials
     try:
         assume_role_and_save_in_credentials(args.profile[0], args.role_arn[0], args.role_session_name[0], args.mfa_serial[0], args.mfa_code[0])
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 

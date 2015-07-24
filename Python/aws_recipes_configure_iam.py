@@ -33,7 +33,7 @@ def main(args):
                user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
                mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
                mfa_serial = mfa_devices[0]['SerialNumber']
-           except Exception, e:
+           except Exception as e:
                printException(e)
                pass
 

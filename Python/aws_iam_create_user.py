@@ -9,7 +9,7 @@ import base64
 _gnupg_available = True
 try:
     import gnupg
-except Exception, e:
+except Exception as e:
     _gnupg_available = False
     pass
 import os
@@ -79,7 +79,7 @@ def main(args, default_args):
     try:
         key_id, secret, session_token = read_creds(profile_name)
         iam_client = connect_iam(key_id, secret, session_token)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 
@@ -96,14 +96,14 @@ def main(args, default_args):
         # Prepare the output folder
         try:
             os.mkdir(user)
-        except Exception, e:
+        except Exception as e:
             printError('Failed to create a temporary folder for user %s.' % user)
             return 42
 
         # Create the new IAM user
         try:
             iam_client.create_user(UserName = user)
-        except Exception, e:
+        except Exception as e:
             printException(e)
             cleanup(iam_client, user, True)
             return 42
@@ -114,14 +114,14 @@ def main(args, default_args):
             try:
                 password = generate_password()
                 pgp_and_write(user, 'password.txt', password)
-            except Exception, e:
+            except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
                 return 42
             # Create a login profile
             try:
                 iam_client.create_login_profile(UserName = user, Password = password, PasswordResetRequired = True)
-            except Exception, e:
+            except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
                 return 42
@@ -131,7 +131,7 @@ def main(args, default_args):
             try:
                 printInfo('Adding user to group %s...' % group)
                 iam_client.add_user_to_group(GroupName = group, UserName = user)
-            except Exception, e:
+            except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
                 return 42
@@ -150,7 +150,7 @@ def main(args, default_args):
             # Create an MFA device, Display the QR Code, and activate the MFA device
             try:
                 mfa_serial = enable_mfa(iam_client, user, '%s/qrcode.png' % user)
-            except Exception, e:
+            except Exception as e:
                 cleanup(iam_client, user)
                 return 42
 
@@ -161,7 +161,7 @@ def main(args, default_args):
                 access_key = iam_client.create_access_key(UserName = user)['AccessKey']                
                 id_and_secret = 'Access Key ID: %s\nSecret Access Key: %s' % (access_key['AccessKeyId'], access_key['SecretAccessKey'])
                 pgp_and_write(user, 'access_key.txt', id_and_secret)
-            except Exception, e:
+            except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
                 return 42

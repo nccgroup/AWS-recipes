@@ -25,7 +25,7 @@ def get_group_membership(iam_client, q, params):
             for group in groups:
                 user_info[user_name]['groups'].append(group['GroupName'])
             show_status(user_info, newline = False)
-        except Exception, e:
+        except Exception as e:
             printException(e)
         finally:
             q.task_done()
@@ -60,7 +60,7 @@ def main(args):
     try:
         key_id, secret, session_token = read_creds(profile_name)
         iam_client = connect_iam(key_id, secret, session_token)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 
@@ -70,7 +70,7 @@ def main(args):
             try:
                 print 'Creating group \'%s\'...' % group
                 iam_client.create_group(GroupName = group)
-            except Exception, e:
+            except Exception as e:
                 printException(e)
 
     # Download IAM users and their group memberships
@@ -87,7 +87,7 @@ def main(args):
         try:
             f = open(args.output_file[0], 'wt')
             f.write('username, %s\n' % (', '.join(all_checked_groups)))
-        except Exception, e:
+        except Exception as e:
             printException(e)
 
     # Iterate through users

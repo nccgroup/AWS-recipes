@@ -20,7 +20,7 @@ def main(args):
     # Init STS session
     try:
         init_sts_session_and_save_in_credentials(args.profile[0], mfa_code = args.mfa_code[0], mfa_serial_arg = args.mfa_serial[0])
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 

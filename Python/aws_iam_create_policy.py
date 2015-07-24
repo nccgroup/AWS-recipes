@@ -52,7 +52,7 @@ def main(args):
     try:
         key_id, secret, session_token = read_creds(profile_name)
         iam_client = connect_iam(key_id, secret, session_token)
-    except Exception, e:
+    except Exception as e:
         printException(e)
         return 42
 
@@ -79,7 +79,7 @@ def main(args):
                     print 'Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type)
                     if not args.dry_run:
                         callback(**params)
-                except Exception, e:
+                except Exception as e:
                     printException(e)
                     pass
         else:
