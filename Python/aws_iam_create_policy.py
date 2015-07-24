@@ -42,10 +42,10 @@ def main(args):
     profile_name = args.profile[0]
     target_type = args.type[0]
     if not args.is_managed and target_type == None:
-        print 'Error: you must either create a managed policy or specify the type of IAM entity the policy will be attached to.'
+        printError('Error: you must either create a managed policy or specify the type of IAM entity the policy will be attached to.')
         return 42
     if not args.is_managed and target_type == None and len(args.targets) < 1:
-        print 'Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type
+        printError('Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type
         return 42
 
     # Connect to IAM
@@ -62,7 +62,7 @@ def main(args):
     # Create the policies
     for template in args.templates:
         if not os.path.isfile(template):
-            print 'Error: file \'%s\' does not exist.' % template
+            printError('Error: file \'%s\' does not exist.' % template)
             continue
         with open(template, 'rt') as f:
             policy = f.read()  # json.load(f)
@@ -76,7 +76,7 @@ def main(args):
             for target in args.targets:
                 params[target_type.title() + 'Name'] = target
                 try:
-                    print 'Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type)
+                    printInfo('Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type))
                     if not args.dry_run:
                         callback(**params)
                 except Exception as e:
@@ -97,12 +97,12 @@ def main(args):
             elif prompt_4_yes_no('Do you want to add a description to the \'%s\' policy' % policy_name):
                 params['Description'] = prompt_4_value('Enter the policy description:')
             if not args.dry_run:
-                print 'Creating policy \'%s\'...' % (policy_name)
+                printInfo('Creating policy \'%s\'...' % (policy_name))
                 new_policy = iam_client.create_policy(**params)
                 if len(args.targets):
                     callback = getattr(iam_client, 'attach_' + target_type + '_policy')
                     for target in args.targets:
-                        print 'Attaching policy to the \'%s\' IAM %s...' % (target, target_type)
+                        printInfo('Attaching policy to the \'%s\' IAM %s...' % (target, target_type))
                         params = {}
                         params['PolicyArn'] = new_policy['Policy']['Arn']
                         params[target_type.title() + 'Name'] = target

@@ -18,7 +18,7 @@ def main(args):
 
     # Check arguments
     if not args.bucket_name[0]:
-        print 'Error: you need to provide the name of the S3 bucket to deliver log files to.'
+        printError('Error: you need to provide the name of the S3 bucket to deliver log files to.')
         return 42
 
     # Initialize various lists of regions
@@ -37,14 +37,14 @@ def main(args):
         return 42
 
     # Iterate through regions and enable CloudTrail and get some info
-    print 'Fetching CloudTrail status for all regions...'
+    printInfo('Fetching CloudTrail status for all regions...')
     for region in regions:
         cloudtrail_client = connect_cloudtrail(key_id, secret, token, region, True)
         trails = get_trails(cloudtrail_client)
         if len(trails):
             status = cloudtrail_client.get_trail_status(Name = trails[0]['Name'])
             if status['IsLogging']:
-                print 'CloudTrail is enabled in %s' % region
+                printInfo('CloudTrail is enabled in %s' % region)
             else:
                 stopped_regions.append((region, trails[0]['Name']))
             for trail in trails:
@@ -62,7 +62,7 @@ def main(args):
                 continue
             # Enable CloudTrails if user says so
             if args.force or prompt_4_yes_no('CloudTrail is disabled in %s. Do you want to enabled it' % region):
-                print 'Enabling CloudTrail in region %s...' % region
+                printInfo('Enabling CloudTrail in region %s...' % region)
                 name = 'Default'
                 cloudtrail_client.create_trail(Name = name, S3BucketName = args.bucket_name[0], S3KeyPrefix = args.s3_key_prefix[0], SnsTopicName = args.sns_topic_name[0], IncludeGlobalServiceEvents = include_global_service_events)
                 cloudtrail_client.start_logging(Name = name)

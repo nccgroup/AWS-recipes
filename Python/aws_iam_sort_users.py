@@ -68,13 +68,13 @@ def main(args):
     if args.create_groups and not args.dry_run:
         for group in args.common_groups + args.category_groups:
             try:
-                print 'Creating group \'%s\'...' % group
+                printInfo('Creating group \'%s\'...' % group)
                 iam_client.create_group(GroupName = group)
             except Exception as e:
                 printException(e)
 
     # Download IAM users and their group memberships
-    print 'Downloading group membership information...'
+    printInfo('Downloading group membership information...')
     user_info = {}
     users = handle_truncated_responses(iam_client.list_users, {}, 'Users')
     show_status(user_info, total = len(users), newline = False)
@@ -93,7 +93,7 @@ def main(args):
     # Iterate through users
     test = 0
     for user in user_info:
-        print 'Checking configuration of \'%s\'...' % user
+        printInfo('Checking configuration of \'%s\'...' % user)
         add_user_to_common_group(iam_client, user_info[user]['groups'], args.common_groups, user, args.force_common_group, user_info, args.dry_run)
         add_user_to_category_group(iam_client, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
         if args.output_file[0] and f:
