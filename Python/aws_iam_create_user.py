@@ -6,7 +6,12 @@ from AWSUtils.utils_iam import *
 
 # Import third-party modules
 import base64
-import gnupg
+_gnupg_available = True
+try:
+    import gnupg
+except Exception, e:
+    _gnupg_available = False
+    pass
 import os
 import random
 import re
@@ -30,6 +35,8 @@ def generate_password(length = 16):
     return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits + '!@#$%^&*()_+`-=[]{};:,<.>?/\\|') for _ in xrange(length))
 
 def pgp_and_write(user, filename, data):
+    if not _gnupg_available:
+        return
     pgp_key = None
     gpg = gnupg.GPG(gnupghome = os.path.join(os.path.expanduser('~'), '.gnupg'))
     public_keys = gpg.list_keys()
