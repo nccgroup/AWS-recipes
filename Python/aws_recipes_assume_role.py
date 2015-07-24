@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Import AWS utils
 from AWSUtils.utils_sts import *
