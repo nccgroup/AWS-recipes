@@ -45,7 +45,7 @@ def main(args):
         printError('Error: you must either create a managed policy or specify the type of IAM entity the policy will be attached to.')
         return 42
     if not args.is_managed and target_type == None and len(args.targets) < 1:
-        printError('Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type
+        printError('Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type)
         return 42
 
     # Connect to IAM
