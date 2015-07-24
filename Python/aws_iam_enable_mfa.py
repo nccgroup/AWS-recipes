@@ -18,7 +18,6 @@ def main(args):
     configPrintException(args.debug)
 
     # Arguments
-    print args
     profile_name = args.profile[0]
     user_name = args.user_name[0]
 
