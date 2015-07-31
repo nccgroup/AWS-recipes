@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 
 #
 # Validate the contents of the IAM policies folder

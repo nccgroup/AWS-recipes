@@ -1,0 +1,1 @@
+Deny most actions if no security token was used or if it was issued longer than eight hours ago. Non-blacklisted actions are used by AWS-recipes to enable MFA for an existing IAM user.

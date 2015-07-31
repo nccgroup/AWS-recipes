@@ -1,15 +1,16 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
-from AWSUtils.utils_sts import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
+from opinel.utils_sts import *
 
-# Import third-party modules
-import boto
+# Import stock packages
 import shutil
 import sys
+import time
 import traceback
+
 
 ########################################
 ##### Main
@@ -26,83 +27,85 @@ def main(args):
 
     # Connect to IAM
     try:
-        print 'Connecting to AWS IAM...'
-        session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
-        iam_connection = boto.connect_iam(aws_access_key_id = session_key_id, aws_secret_access_key = session_secret, security_token = session_token)
-    except Exception, e:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception as e:
         printException(e)
         return 42
 
     # Fetch the long-lived key ID if STS credentials are used
     if session_token:
-        aws_key_id, aws_secret, foo1, foo2 = read_creds_from_aws_credentials_file(profile_name, aws_credentials_file_no_mfa)
+        aws_key_id, aws_secret, foo1 = read_creds(profile_name + '-nomfa')
     else:
-        aws_key_id = session_key_id
+        aws_key_id = key_id
+        aws_secret = secret
 
-    # Fetch current user name
+    # Set the user name
     if not user_name:
-        user_name = fetch_from_current_user(iam_connection, aws_key_id, 'user_name')
+        printInfo('Searching for username...')
+        user_name = fetch_from_current_user(iam_client, aws_key_id, 'UserName')
         if not user_name:
-            print 'Error'
+            printError('Error: could not find user name to rotate the key for.')
             return 42
 
     # Create the new key
     try:
         # Create a new IAM key
-        print 'Creating a new access key for \'%s\'...' % user_name
-        new_key = iam_connection.create_access_key(user_name)
-        new_key_id = new_key['create_access_key_response']['create_access_key_result']['access_key']['access_key_id']
-        new_secret = new_key['create_access_key_response']['create_access_key_result']['access_key']['secret_access_key']
-        list_access_keys(iam_connection, user_name)
-    except Exception, e:
+        printInfo('Creating a new access key for \'%s\'...' % user_name)
+        new_key = iam_client.create_access_key(UserName = user_name)
+        new_key_id = new_key['AccessKey']['AccessKeyId']
+        new_secret = new_key['AccessKey']['SecretAccessKey']
+        list_access_keys(iam_client, user_name)
+    except Exception as e:
         printException(e)
         return 42
 
-    # Save the new key to a temporary file
+    # Write the new key
     if session_token:
-        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp)
+        write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = new_key_id, secret = new_secret, session_token = None)
     else:
-        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None, credentials_file = aws_credentials_file_tmp, use_no_mfa_file = False)
+        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None)
 
-    # Init an STS session with the new key
     if session_token:
         # Init an STS session with the new key
-        print 'Initiating a session with the new access key...'
-        init_sts_session_and_save_in_credentials(profile_name, credentials_file = aws_credentials_file_tmp)
+        printInfo('Initiating a session with the new access key...')
+        init_sts_session_and_save_in_credentials(profile_name)
+    else:
+        # Sleep because the access key may not be active server-side...
+        printInfo('Verifying access with the new key...')
+        time.sleep(5)
 
-    # Confirm that it works
+    # Confirm that it works...
     try:
-        print 'Verifying access with the new key...'
-        session_key_id, session_secret, mfa_serial, session_token = read_creds_from_aws_credentials_file(profile_name)
-        new_connection = boto.connect_iam(aws_access_key_id = session_key_id, aws_secret_access_key = session_secret, security_token = session_token)
-        print 'Deleting the old access key...'
-        new_connection.delete_access_key(aws_key_id, user_name)
-        list_access_keys(iam_connection, user_name)
-    except Exception, e:
+        new_key_id, new_secret, new_session_token = read_creds(profile_name)
+        new_iam_client = connect_iam(new_key_id, new_secret, new_session_token)
+        printInfo('Deleting the old access key...')
+        new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
+    except Exception as e:
         printException(e)
+        printInfo('Restoring your old credentials...')
+        # Restore the old key here
+        if session_token:
+            write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = aws_key_id, secret = aws_secret, session_token = None)
+        else:
+            write_creds_to_aws_credentials_file(profile_name, key_id = aws_key_id, secret = aws_secret, session_token = None)
         return 42
 
-    # Move temporary file to permanent
-    if session_token:
-        print 'Updating AWS configuration file at %s...' % aws_credentials_file_no_mfa
-        shutil.move(aws_credentials_file_tmp, aws_credentials_file_no_mfa)
-    else:
-        print 'Updating AWS configuration file at %s...' % aws_credentials_file
-        shutil.move(aws_credentials_file_tmp, aws_credentials_file)
-
-    print 'Success !'
+    try:
+        list_access_keys(new_iam_client, user_name)
+        printInfo('Success !')
+    except Exception as e:
+        printException(e)
+        return 42
 
 
 ########################################
 ##### Additional arguments
 ########################################
 
-parser.add_argument('--user_name',
-                    dest='user_name',
-                    default=[''],
-                    nargs='+',
-                    help='Your AWS IAM user name. This script will find it automatically if not provided, but will take longer to run.')
+default_args = read_profile_default_args(parser.prog)
 
+add_iam_argument(parser, default_args, 'user-name')
 
 ########################################
 ##### Parse arguments and call main()

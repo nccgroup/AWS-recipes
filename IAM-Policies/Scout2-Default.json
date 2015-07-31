@@ -1,0 +1,27 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudtrail:DescribeTrails",
+                "cloudtrail:GetTrailStatus",
+                "ec2:Describe*",
+                "elasticloadbalancing:Describe*",
+                "iam:GenerateCredentialReport",
+                "iam:Get*",
+                "iam:List*",
+                "rds:Describe*",
+                "rds:ListTagsForResource",
+                "s3:GetBucketAcl",                
+                "s3:GetBucketLogging",
+                "s3:GetBucketPolicy",
+                "s3:GetBucketVersioning",
+                "s3:GetBucketWebsite",
+                "s3:GetLifecycleConfiguration",
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

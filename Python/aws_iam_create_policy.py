@@ -1,13 +1,13 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
 
-# Import third-party modules
-import boto3
+# Import stock packages
 import os
 import sys
+
 
 ########################################
 ##### Globals
@@ -23,9 +23,9 @@ re_aws_account_id = re.compile('AWS_ACCOUNT_ID', re.DOTALL|re.MULTILINE)
 #
 # Get AWS account ID of authenticated user
 #
-def get_aws_account_id(iam_connection):
-    result = iam_connection.get_all_users(max_items = 1)
-    user_arn = result['list_users_response']['list_users_result']['users'][0]['arn']
+def get_aws_account_id(iam_client):
+    result = iam_client.list_users(MaxItems = 1)
+    user_arn = result['Users'][0]['Arn']
     return user_arn.split(':')[4]
 
 
@@ -42,51 +42,47 @@ def main(args):
     profile_name = args.profile[0]
     target_type = args.type[0]
     if not args.is_managed and target_type == None:
-        print 'Error: you must either create a managed policy or specify the type of IAM entity the policy will be attached to.'
+        printError('Error: you must either create a managed policy or specify the type of IAM entity the policy will be attached to.')
         return 42
     if not args.is_managed and target_type == None and len(args.targets) < 1:
-        print 'Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type
-        return 42
-
-    # Read credentials
-    key_id, secret, token = read_creds(args.profile[0])
-    if not key_id:
-        print 'Error: could not find AWS credentials.'
+        printError('Error: you must provide the name of at least one IAM %s you will attach this inline policy to.' % target_type)
         return 42
 
     # Connect to IAM
-    iam_connection = connect_iam(key_id, secret, token)
-    if not iam_connection:
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception as e:
+        printException(e)
         return 42
 
-    # Use boto3 to work with policies...
-    if args.is_managed:
-        boto3_session = boto3.session.Session(aws_access_key_id = key_id, aws_secret_access_key = secret, aws_session_token = token)
-
     # Get AWS account ID
-    aws_account_id = get_aws_account_id(iam_connection)
+    aws_account_id = get_aws_account_id(iam_client)
 
     # Create the policies
     for template in args.templates:
         if not os.path.isfile(template):
-            print 'Error: file \'%s\' does not exist.' % template
+            printError('Error: file \'%s\' does not exist.' % template)
             continue
         with open(template, 'rt') as f:
             policy = f.read()  # json.load(f)
         policy = re_aws_account_id.sub(aws_account_id, policy)
         policy_name = os.path.basename(template).split('.')[0]
         if not args.is_managed:
-            callback = getattr(iam_connection, 'put_' + target_type + '_policy')
+            callback = getattr(iam_client, 'put_' + target_type + '_policy')
+            params = {}
+            params['PolicyName'] = policy_name
+            params['PolicyDocument' ] = policy
             for target in args.targets:
+                params[target_type.title() + 'Name'] = target
                 try:
-                    print 'Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type)
+                    printInfo('Creating policy \'%s\' for the \'%s\' IAM %s...' % (policy_name, target, target_type))
                     if not args.dry_run:
-                        callback(target, policy_name, policy)
-                except Exception, e:
+                        callback(**params)
+                except Exception as e:
                     printException(e)
                     pass
         else:
-            iam_connection3 = boto3_session.resource('iam')
             params = {}
             params['PolicyDocument'] = policy
             params['PolicyName'] = policy_name
@@ -101,12 +97,12 @@ def main(args):
             elif prompt_4_yes_no('Do you want to add a description to the \'%s\' policy' % policy_name):
                 params['Description'] = prompt_4_value('Enter the policy description:')
             if not args.dry_run:
-                print 'Creating policy \'%s\'...' % (policy_name)
-                new_policy = iam_connection3.meta.client.create_policy(**params)
+                printInfo('Creating policy \'%s\'...' % (policy_name))
+                new_policy = iam_client.create_policy(**params)
                 if len(args.targets):
-                    callback = getattr(iam_connection3.meta.client, 'attach_' + target_type + '_policy')
+                    callback = getattr(iam_client, 'attach_' + target_type + '_policy')
                     for target in args.targets:
-                        print 'Attaching policy to the \'%s\' IAM %s...' % (target, target_type)
+                        printInfo('Attaching policy to the \'%s\' IAM %s...' % (target, target_type))
                         params = {}
                         params['PolicyArn'] = new_policy['Policy']['Arn']
                         params[target_type.title() + 'Name'] = target
@@ -122,38 +118,37 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
+default_args = read_profile_default_args(parser.prog)
+
 parser.add_argument('--managed',
                     dest='is_managed',
                     default=False,
                     action='store_true',
-                    help='Create a managed policy.')
+                    help='Create a managed policy')
 parser.add_argument('--type',
                     dest='type',
                     default=[ None ],
                     nargs='+',
                     choices=['group', 'managed', 'role', 'user'],
-                    help='Type of target that the policy will apply or be attached to.')
+                    help='Type of target that the policy will apply or be attached to')
 parser.add_argument('--targets',
                     dest='targets',
                     default=[],
                     nargs='+',
-                    help='Name of the IAM entity the policy will be added to (required for inline policies).')
+                    help='Name of the IAM entity the policy will be added to (required for inline policies)')
 parser.add_argument('--templates',
                     dest='templates',
                     default=[],
                     nargs='+',
                     required=True,
-                    help='Path to the template IAM policies that will be created.')
-parser.add_argument('--dry',
-                    dest='dry_run',
-                    default=False,
-                    action='store_true',
-                    help='Perform only read access.')
+                    help='Path to the template IAM policies that will be created')
 parser.add_argument('--save',
                     dest='save_locally',
                     default=False,
                     action='store_true',
-                    help='Generates the policies and store them locally.')
+                    help='Generates the policies and store them locally')
+
+add_common_argument(parser, default_args, 'dry-run')
 
 args = parser.parse_args()
 

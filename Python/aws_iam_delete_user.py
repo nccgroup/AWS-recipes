@@ -1,11 +1,12 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
 
-# Import third-party modules
+# Import stock packages
 import sys
+
 
 ########################################
 ##### Main
@@ -18,34 +19,32 @@ def main(args):
 
     # Arguments
     profile_name = args.profile[0]
-    if not args.users:
-        print "Error, you need to provide at least one user name"
+    if not args.user_name:
+        printError("Error, you need to provide at least one user name")
         return 42
 
     # Connect to IAM
-    iam_connection = connect_iam(profile_name)
-    if not iam_connection:
+    try:
+        key_id, secret, session_token = read_creds(profile_name)
+        iam_client = connect_iam(key_id, secret, session_token)
+    except Exception as e:
+        printException(e)
         return 42
 
     # Iterate over users
-    for user in args.users:
-
-        # Status
-        print 'Deleting user %s...' % user
-
-        # Delete user
-        delete_user(iam_connection, user)
+    for user in args.user_name:
+        delete_user(iam_client, user)
 
 
 ########################################
 ##### Parse arguments and call main()
 ########################################
 
-parser.add_argument('--users',
-                    dest='users',
+parser.add_argument('--user-name',
+                    dest='user_name',
                     default=None,
                     nargs='+',
-                    help='User name(s) to delete')
+                    help='Name of user(s) to be deleted')
 
 args = parser.parse_args()
 
