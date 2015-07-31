@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
 
-# Import third-party modules
+# Import stock packages
 import base64
-_gnupg_available = True
-try:
-    import gnupg
-except Exception as e:
-    _gnupg_available = False
-    pass
 import os
 import random
 import re
@@ -20,6 +14,13 @@ import sys
 import time
 import zipfile
 
+# Import third-party packages
+_gnupg_available = True
+try:
+    import gnupg
+except Exception as e:
+    _gnupg_available = False
+    pass
 
 ########################################
 ##### Helpers

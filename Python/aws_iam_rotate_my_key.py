@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
-from AWSUtils.utils_sts import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
+from opinel.utils_sts import *
 
-# Import third-party modules
+# Import stock packages
 import shutil
 import sys
 import time

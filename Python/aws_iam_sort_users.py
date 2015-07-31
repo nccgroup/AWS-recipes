@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_iam import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_iam import *
 
-# Import third-party modules
+# Import stock packages
 from collections import Counter
 import re
 import sys

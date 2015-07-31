@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils_sts import *
+# Import opinel
+from opinel.utils_sts import *
 
-# Import third-party modules
+# Import stock packages
 import sys
 
 ########################################

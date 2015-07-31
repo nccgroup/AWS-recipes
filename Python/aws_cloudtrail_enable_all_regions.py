@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-# Import AWS utils
-from AWSUtils.utils import *
-from AWSUtils.utils_cloudtrail import *
+# Import opinel
+from opinel.utils import *
+from opinel.utils_cloudtrail import *
 
 # Import third-party modules
 import sys

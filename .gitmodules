@@ -1,3 +1,0 @@
-[submodule "Python/AWSUtils"]
-	path = Python/AWSUtils
-	url = https://github.com/iSECPartners/AWSUtils.git
