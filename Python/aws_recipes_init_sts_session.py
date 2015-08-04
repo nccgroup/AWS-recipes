@@ -18,7 +18,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.0'):
+    if not check_opinel_version('0.10.2'):
         return 42
 
     # Init STS session
@@ -33,8 +33,8 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
-add_sts_argument(parser, 'mfa_serial')
-add_sts_argument(parser, 'mfa_code')
+add_sts_argument(parser, 'mfa-serial')
+add_sts_argument(parser, 'mfa-code')
 
 args = parser.parse_args()
 
