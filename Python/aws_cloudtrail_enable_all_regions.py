@@ -4,7 +4,7 @@
 from opinel.utils import *
 from opinel.utils_cloudtrail import *
 
-# Import third-party modules
+# Import stock packages
 import sys
 
 ########################################
@@ -16,13 +16,18 @@ def main(args):
     # Configure the debug level
     configPrintException(args.debug)
 
+    # Check version of opinel
+    if not check_opinel_version('0.10.0'):
+        return 42
+
     # Check arguments
+    profile_name = args.profile[0]
     if not args.bucket_name[0]:
         printError('Error: you need to provide the name of the S3 bucket to deliver log files to.')
         return 42
 
     # Initialize various lists of regions
-    regions = build_region_list('cloudtrail', args.region)
+    regions = build_region_list('cloudtrail', args.regions)
     disabled_regions = []
     stopped_regions = []
     global_enabled_regions = []
@@ -30,16 +35,15 @@ def main(args):
     # By default, we want to enable global services
     include_global_service_events = True
 
-    # Read credentials
-    try:
-        key_id, secret, token = read_creds(args.profile[0])
-    except Exception as e:
+    # Search for AWS credentials
+    key_id, secret, session_token = read_creds(profile_name)
+    if not key_id:
         return 42
 
     # Iterate through regions and enable CloudTrail and get some info
     printInfo('Fetching CloudTrail status for all regions...')
     for region in regions:
-        cloudtrail_client = connect_cloudtrail(key_id, secret, token, region, True)
+        cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
         trails = get_trails(cloudtrail_client)
         if len(trails):
             status = cloudtrail_client.get_trail_status(Name = trails[0]['Name'])
@@ -57,7 +61,7 @@ def main(args):
     # Enable CloudTrail
     if not args.dry_run:
         for region in disabled_regions:
-            cloudtrail_client = connect_cloudtrail(key_id, secret, token, region, True)
+            cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
             if not cloudtrail_client:
                 continue
             # Enable CloudTrails if user says so
@@ -67,7 +71,7 @@ def main(args):
                 cloudtrail_client.create_trail(Name = name, S3BucketName = args.bucket_name[0], S3KeyPrefix = args.s3_key_prefix[0], SnsTopicName = args.sns_topic_name[0], IncludeGlobalServiceEvents = include_global_service_events)
                 cloudtrail_client.start_logging(Name = name)
         for region, name in stopped_regions:
-            cloudtrail_client = connect_cloudtrail(key_id, secret, token, region, True)
+            cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
             if args.force or prompt_4_yes_no('CloudTrail is stopped in %s. Do you want to start it' % region):
                 cloudtrail_client.start_logging(Name = name)
 
@@ -80,13 +84,16 @@ def main(args):
             chosen_region = prompt_4_value('Which region ID do you want to enable global services logging in', regions, None, True, True, is_question = True)
             for region, name in global_enabled_regions:
                 if region != chosen_region:
-                    cloudtrail_client = connect_cloudtrail(key_id, secret, token, region, True)
+                    cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
                     cloudtrail_client.update_trail(Name = name, IncludeGlobalServiceEvents = False)
 
 
 ########################################
 ##### Additional arguments
 ########################################
+
+add_common_argument(parser, {}, 'regions')
+add_common_argument(parser, {}, 'dry-run')
 
 parser.add_argument('--s3-bucket-name',
                     dest='bucket_name',
@@ -109,8 +116,6 @@ parser.add_argument('--force',
                     action='store_true',
                     help='Automatically enable CloudTrail if it is not.')
 
-add_common_argument(parser, {}, 'region')
-add_common_argument(parser, {}, 'dry-run')
 
 ########################################
 ##### Parse arguments and call main()

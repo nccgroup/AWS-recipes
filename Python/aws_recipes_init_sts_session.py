@@ -17,6 +17,10 @@ def main(args):
     # Configure the debug level
     configPrintException(args.debug)
 
+    # Check version of opinel
+    if not check_opinel_version('0.10.0'):
+        return 42
+
     # Init STS session
     try:
         init_sts_session_and_save_in_credentials(args.profile[0], mfa_code = args.mfa_code[0], mfa_serial_arg = args.mfa_serial[0])

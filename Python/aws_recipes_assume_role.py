@@ -15,6 +15,10 @@ def main(args):
     # Configure the debug level
     configPrintException(args.debug)
 
+    # Check version of opinel
+    if not check_opinel_version('0.10.0'):
+        return 42
+
     # Assume role and store credentials
     try:
         assume_role_and_save_in_credentials(args.profile[0], args.role_arn[0], args.role_session_name[0], args.mfa_serial[0], args.mfa_code[0])

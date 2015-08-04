@@ -16,6 +16,10 @@ def main(args):
     # Configure the debug level
     configPrintException(args.debug)
 
+    # Check version of opinel
+    if not check_opinel_version('0.10.0'):
+        return 42
+
     # Arguments
     profile_name = args.profile[0]
 
