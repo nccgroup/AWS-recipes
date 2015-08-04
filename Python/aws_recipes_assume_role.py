@@ -30,13 +30,13 @@ def main(args):
 add_sts_argument(parser, 'mfa_serial')
 add_sts_argument(parser, 'mfa_code')
 
-parser.add_argument('--role',
+parser.add_argument('--role-arn',
                     dest='role_arn',
                     required=True,
                     nargs='+',
                     help='Role to be assumed.')
 
-parser.add_argument('--role_session_name',
+parser.add_argument('--role-session-name',
                     dest='role_session_name',
                     required=True,
                     nargs='+',

@@ -5,7 +5,6 @@ from opinel.utils import *
 from opinel.utils_iam import *
 
 # Import stock packages
-from collections import Counter
 import re
 import sys
 
