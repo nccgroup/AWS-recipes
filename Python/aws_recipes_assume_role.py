@@ -31,8 +31,8 @@ def main(args):
 ##### Parse arguments and call main()
 ########################################
 
-add_sts_argument(parser, 'mfa_serial')
-add_sts_argument(parser, 'mfa_code')
+add_sts_argument(parser, 'mfa-serial')
+add_sts_argument(parser, 'mfa-code')
 
 parser.add_argument('--role-arn',
                     dest='role_arn',
