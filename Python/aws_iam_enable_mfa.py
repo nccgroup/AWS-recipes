@@ -47,7 +47,7 @@ def main(args):
     mfa_serial = enable_mfa(iam_client, user_name)
 
     # Update the no-mfa credentials file
-    write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial, credentials_file = aws_credentials_file_no_mfa)
+    write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
     printInfo('Your credentials file has been updated; you may now use aws_recipes_init_sts_session.py to access the API using short-lived credentials.')
 
 
