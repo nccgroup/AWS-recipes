@@ -35,18 +35,18 @@ def cleanup(iam_client, user, local_only = False, mfa_serial = None):
 def generate_password(length = 16):
     return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits + '!@#$%^&*()_+`-=[]{};:,<.>?/\\|') for _ in xrange(length))
 
-def pgp_and_write(user, filename, data):
+def pgp_and_write(user, filename, data, always_trust = False):
     if not _gnupg_available:
         return
     pgp_key = None
     gpg = gnupg.GPG(gnupghome = os.path.join(os.path.expanduser('~'), '.gnupg'))
     public_keys = gpg.list_keys()
     for k in public_keys:
-        uid = k['uids'][0]
-        if re.match('.*%s.*' % user, uid):
-            pgp_key = k
+        for uid in k['uids']:
+            if re.match('.*%s.*' % user, uid):
+                pgp_key = k
     if pgp_key:
-        asc_data = gpg.encrypt(data, pgp_key['uids'])
+        asc_data = gpg.encrypt(data, pgp_key['uids'],  always_trust = always_trust)
         if asc_data.ok:
             with open(os.path.join(user, '%s.pgp' % filename), 'w') as f:
                 f.write(str(asc_data))
@@ -120,7 +120,7 @@ def main(args, default_args):
             # Generate and save a random password
             try:
                 password = generate_password()
-                pgp_and_write(user, 'password.txt', password)
+                pgp_and_write(user, 'password.txt', password, args.always_trust)
             except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
@@ -165,9 +165,9 @@ def main(args, default_args):
         if not args.no_access_key:
             printInfo('Creating a new access key for user %s...' % user)
             try:
-                access_key = iam_client.create_access_key(UserName = user)['AccessKey']                
+                access_key = iam_client.create_access_key(UserName = user)['AccessKey']
                 id_and_secret = 'Access Key ID: %s\nSecret Access Key: %s' % (access_key['AccessKeyId'], access_key['SecretAccessKey'])
-                pgp_and_write(user, 'access_key.txt', id_and_secret)
+                pgp_and_write(user, 'access_key.txt', id_and_secret, args.always_trust)
             except Exception as e:
                 printException(e)
                 cleanup(iam_client, user)
@@ -217,6 +217,11 @@ parser.add_argument('--no-access-key',
                     default=set_profile_default(default_args, 'no_access_key', False),
                     action='store_true',
                     help='Do not generate an access key')
+parser.add_argument('--always-trust',
+                    dest='always_trust',
+                    default=set_profile_default(default_args, 'always_trust', False),
+                    action='store_true',
+                    help='A not generate an access key')
 
 args = parser.parse_args()
 
