@@ -28,7 +28,7 @@ def can_merge_statements(s1, s2):
     # Resource or NotResource ?
     s1_resource_type = 'Resource' if 'Resource' in s1 else 'NotResource'
     s2_resource_type = 'Resource' if 'Resource' in s2 else 'NotResource'
-    if s1['Effect'] == s2['Effect'] and s1_resource_type == s2_resource_type and s1_action_type == s2_action_type:
+    if s1['Effect'] == s2['Effect'] and s1_action_type == s2_action_type and s1_resource_type == s2_resource_type and s1['Resource'] == s2['Resource']:
         if ((('Condition' in s1 and 'Condition' in s2) and s1['Condition'] == s2['Condition']) or ('Condition' not in s1 and 'Condition' not in s2)):
             return True
     return False
@@ -128,8 +128,11 @@ def get_policies(iam_client, managed_policies, resource_type, resource_name):
 #
 def merge_policies(policy_documents, all_permissions):
     policy = {}
+    policy['Version'] = ''
     policy['Statement'] = []
     for doc in policy_documents:
+        # TODO: handle this in the merge / normalize statement function
+        policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']        
         for s1 in doc['Statement']:
             merged = False
             s1_action_type, s1_resource_type = normalize_statement(s1)
