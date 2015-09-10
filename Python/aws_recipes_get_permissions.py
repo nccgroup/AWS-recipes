@@ -67,15 +67,19 @@ def get_value_from_arn(field, arn):
 # Get managed policy
 #
 def get_managed_policy_document(iam_client, policy_arn, managed_policies):
+    policy_document = None
     print('Fetching managed policy %s...' % policy_arn)
     # Check if we already downloaded that managed policy...
     if policy_arn in managed_policies:
         policy_document = managed_policies[policy_arn]
     else:
-        policy = iam_client.get_policy(PolicyArn = policy_arn)['Policy']
-        policy_document = iam_client.get_policy_version(PolicyArn = policy_arn, VersionId = policy['DefaultVersionId'])['PolicyVersion']['Document']
-        # Cache managed policies to avoid multiple download when attached to multiple IAM resources
-        manage_dictionary(managed_policies, policy_arn, policy_document)
+        try:
+            policy = iam_client.get_policy(PolicyArn = policy_arn)['Policy']
+            policy_document = iam_client.get_policy_version(PolicyArn = policy_arn, VersionId = policy['DefaultVersionId'])['PolicyVersion']['Document']
+            # Cache managed policies to avoid multiple download when attached to multiple IAM resources
+            manage_dictionary(managed_policies, policy_arn, policy_document)
+        except Exception as e:
+            printException(e)
     return policy_document
 
 #
@@ -131,8 +135,10 @@ def merge_policies(policy_documents, all_permissions):
     policy['Version'] = ''
     policy['Statement'] = []
     for doc in policy_documents:
+        if not doc:
+            continue
         # TODO: handle this in the merge / normalize statement function
-        policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']        
+        policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']
         for s1 in doc['Statement']:
             merged = False
             s1_action_type, s1_resource_type = normalize_statement(s1)
