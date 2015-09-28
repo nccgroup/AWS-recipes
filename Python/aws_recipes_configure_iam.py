@@ -17,29 +17,38 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.0'):
+    if not check_opinel_version('0.15.0'):
         return 42
 
     # Arguments
     profile_name = args.profile[0]
 
-    # Check for migration from existing profile to no-mfa profile
-    use_found_credentials = False
-    key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
-    if key_id != None and secret != None and mfa_serial == None and token == None:
-        if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuring mfa' % profile_name):
-           use_found_credentials = True
-           iam_client = connect_iam(key_id, secret, token)
-           if not iam_client:
-               return 42
-           try:
-               printInfo('Trying to read the MFA serial number associated with this IAM user...')
-               user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
-               mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
-               mfa_serial = mfa_devices[0]['SerialNumber']
-           except Exception as e:
-               printException(e)
-               pass
+    # Read credentials from a CSV file
+    if args.csv_credentials[0]:
+        key_id, secret, mfa_serial = read_creds_from_csv(args.csv_credentials[0])
+        if not key_id or not secret:
+            printError('Failed to read credentials from %s' % args.csv_credentials[0])
+            return 42
+        else:
+            use_found_credentials = True
+    else:
+        # Check for migration from existing profile to no-mfa profile
+        use_found_credentials = False
+        key_id, secret, mfa_serial, token = read_creds_from_aws_credentials_file(profile_name)
+        if key_id != None and secret != None and mfa_serial == None and token == None:
+            if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuring mfa' % profile_name):
+               use_found_credentials = True
+               iam_client = connect_iam(key_id, secret, token)
+               if not iam_client:
+                   return 42
+               try:
+                   printInfo('Trying to read the MFA serial number associated with this IAM user...')
+                   user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
+                   mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
+                   mfa_serial = mfa_devices[0]['SerialNumber']
+               except Exception as e:
+                   printException(e)
+                   pass
 
     if not use_found_credentials:
        # Get values
@@ -70,10 +79,18 @@ def main(args):
     # Write values to credentials file
     write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
 
+    # Delete CSV file?
+    if args.csv_credentials[0] and prompt_4_yes_no('Do you want to delete the CSV file that contains your long-lived credentials?'):
+        os.remove(args.csv_credentials[0])
 
 ########################################
 ##### Parse arguments and call main()
 ########################################
+
+init_parser()
+default_args = read_profile_default_args(parser.prog)
+
+add_iam_argument(parser, default_args, 'csv-credentials')
 
 args = parser.parse_args()
 
