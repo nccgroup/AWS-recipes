@@ -114,6 +114,8 @@ def main(args):
                 for line in csv_contents:
                     ip_prefix = {}
                     values = line.strip().split(',')
+                    if len(values) < len(mappings):
+                        continue
                     for attribute in mappings:
                         ip_prefix[attribute] = values[mappings[attribute]]
                     if 'ip_prefix' in mappings and 'mask' in mappings:
