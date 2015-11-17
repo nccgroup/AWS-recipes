@@ -37,7 +37,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.18.0'):
+    if not check_opinel_version('0.20.0'):
         return 42
 
     # Get the environment name
@@ -145,16 +145,18 @@ def main(args):
                     continue
 
                 # Get public IP addresses associated with EC2 instances
-                printInfo('...in %s : EC2 instances' % region)
+                printInfo('...in %s: EC2 instances' % region)
                 reservations = handle_truncated_response(ec2_client.describe_instances, {}, 'NextToken', ['Reservations'])
                 for reservation in reservations['Reservations']:
                     for i in reservation['Instances']:
                         if 'PublicIpAddress' in i:
                             ip_addresses[i['PublicIpAddress']] = new_ip_info(region, i['InstanceId'], False)
+                            get_name(ip_addresses[i['PublicIpAddress']], i, 'InstanceId')
                         if 'NetworkInterfaces' in i:
                             for eni in i['NetworkInterfaces']:
                                 if 'Association' in eni:
                                     ip_addresses[eni['Association']['PublicIp']] = new_ip_info(region, i['InstanceId'], False) # At that point, we don't know whether it's an EIP or not...
+                                    get_name(ip_addresses[eni['Association']['PublicIp']], i, 'InstanceId')
 
                 # Get all EIPs (to handle unassigned cases)
                 printInfo('...in %s: Elastic IP addresses' % region)
@@ -165,6 +167,7 @@ def main(args):
                     if instance_id == '':
                         instance_id = None
                     ip_addresses[eip['PublicIp']] = new_ip_info(region, instance_id, True)
+                    ip_addresses[eip['PublicIp']]['name'] = instance_id
 
                 # Format
                 prefixes = []
