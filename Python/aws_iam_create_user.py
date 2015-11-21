@@ -91,7 +91,8 @@ def main(args, default_args):
         return 42
 
     # Initialize and compile the list of regular expression for category groups
-    category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
+    if 'category_groups' in default_args:
+        category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
 
     # Iterate over users
     for user in args.user_name:
@@ -143,9 +144,10 @@ def main(args, default_args):
                 cleanup(iam_client, user)
                 return 42
         # Add user to the common group(s)
-        add_user_to_common_group(iam_client, args.group_name, default_args['common_groups'], user, args.force_common_group)
+        if 'common_groups' in default_args:
+            add_user_to_common_group(iam_client, args.group_name, default_args['common_groups'], user, args.force_common_group)
         # Add user to a category group
-        if len(default_args['category_groups']) > 0:
+        if 'category_groups' in default_args and len(default_args['category_groups']) > 0:
             add_user_to_category_group(iam_client, args.group_name, default_args['category_groups'], category_regex, user)
 
         # MFA enabled?
