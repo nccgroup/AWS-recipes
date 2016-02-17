@@ -1,0 +1,21 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Deny",
+            "Action": "*",
+            "Resource": "*",
+            "Condition": {
+                "ForAnyValue:NotIpAddress": {
+                    "aws:SourceIp": [
+                        "San_Francisco_Office_IP_Address",
+                        "New_York_Office_IP_Address",
+                        "Seattle_Office_IP_Address",
+                        "Chicago_Office_IP_Address",
+                        "Bastion_IP_Address"
+                    ]
+                }
+            }
+        }
+    ]
+}
