@@ -40,12 +40,15 @@ def expand_wildcard_actions(actions, all_permissions):
     new_actions = []
     for action in actions:
         # Do not expand *, only when it's service-specific
-        if action != '*' and '*' in action:
+        if action != '*' and '*' in action: # and service in all_permissions:
             service, action = action.split(':')
-            action = r'%s' % action.replace('*', '.*')
-            re_action = re.compile(action)
-            all_actions = all_permissions[service]['Actions']
-            new_actions = new_actions + ['%s:%s' % (service, a) for a in all_actions for m in [re_action.search(a)] if m]
+            if service in all_permissions:
+                action = r'%s' % action.replace('*', '.*')
+                re_action = re.compile(action)
+                all_actions = all_permissions[service]['Actions']
+                new_actions = new_actions + ['%s:%s' % (service, a) for a in all_actions for m in [re_action.search(a)] if m]
+            else:
+                new_actions.append('%s:%s' % (service, action))
         else:
             new_actions.append(action)
     return new_actions
@@ -138,7 +141,10 @@ def merge_policies(policy_documents, all_permissions):
         if not doc:
             continue
         # TODO: handle this in the merge / normalize statement function
-        policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']
+        if 'Version' in doc:
+            policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']
+        else:
+            policy['Version'] = ''
         for s1 in doc['Statement']:
             merged = False
             s1_action_type, s1_resource_type = normalize_statement(s1)
@@ -237,7 +243,20 @@ def main(args):
     for user_name in args.user_name:
         targets.append(('user', user_name))
 
+    # Will cover all groups, roles, and users
+    if args.all:
+        printInfo('Fetching all IAM groups...')
+        for group in handle_truncated_response(iam_client.list_groups, {}, 'Marker', ['Groups'])['Groups']:
+            targets.append(('group', group['GroupName']))
+        printInfo('Fetching all IAM roles...')
+        for role in handle_truncated_response(iam_client.list_roles, {}, 'Marker', ['Roles'])['Roles']:
+            targets.append(('role', role['RoleName']))
+        printInfo('Fetching all IAM users...')
+        for user in handle_truncated_response(iam_client.list_users, {}, 'Marker', ['Users'])['Users']:
+            targets.append(('user', user['UserName']))
+
     # Get all policies that apply to the targets and aggregate them into a single file
+    printInfo('Fetching all policies in use...')
     managed_policies = {}
     for resource_type, resource_name in targets:
         policy_documents = get_policies(iam_client, managed_policies, resource_type, resource_name)
@@ -280,6 +299,11 @@ parser.add_argument('--policy-arn',
                     default=[],
                     nargs='+',
                     help='ARN of the IAM policy/ies')
+parser.add_argument('--all',
+                    dest='all',
+                    default=False,
+                    action='store_true',
+                    help='Go through all IAM resources')
 
 args = parser.parse_args()
 
