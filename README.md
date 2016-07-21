@@ -4,7 +4,7 @@
 
 ## Installation
 
-    $ git clone https://github.com/iSECPartners/AWS-recipes
+    $ git clone https://github.com/nccgroup/AWS-recipes
     $ cd AWS-recipes
     $ pip install -r requirements.txt
 
