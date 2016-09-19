@@ -1,6 +1,6 @@
 # AWS-recipes
 
-[![Build Status](https://travis-ci.org/iSECPartners/AWS-recipes.svg?branch=master)](https://travis-ci.org/iSECPartners/AWS-recipes)
+[![Build Status](https://travis-ci.org/nccgroup/AWS-recipes.svg?branch=master)](https://travis-ci.org/nccgroup/AWS-recipes)
 
 ## Installation
 
