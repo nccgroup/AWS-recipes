@@ -36,14 +36,14 @@ def main(args):
     include_global_service_events = True
 
     # Search for AWS credentials
-    key_id, secret, session_token = read_creds(profile_name)
-    if not key_id:
+    credentials = read_creds(profile_name)
+    if not credentials['AccessKeyId']:
         return 42
 
     # Iterate through regions and enable CloudTrail and get some info
     printInfo('Fetching CloudTrail status for all regions...')
     for region in regions:
-        cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
+        cloudtrail_client = connect_cloudtrail(credentials, region, True)
         trails = get_trails(cloudtrail_client)
         if len(trails):
             status = cloudtrail_client.get_trail_status(Name = trails[0]['Name'])
@@ -61,7 +61,7 @@ def main(args):
     # Enable CloudTrail
     if not args.dry_run:
         for region in disabled_regions:
-            cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
+            cloudtrail_client = connect_cloudtrail(credentials, region, True)
             if not cloudtrail_client:
                 continue
             # Enable CloudTrails if user says so
@@ -71,7 +71,7 @@ def main(args):
                 cloudtrail_client.create_trail(Name = name, S3BucketName = args.bucket_name[0], S3KeyPrefix = args.s3_key_prefix[0], SnsTopicName = args.sns_topic_name[0], IncludeGlobalServiceEvents = include_global_service_events)
                 cloudtrail_client.start_logging(Name = name)
         for region, name in stopped_regions:
-            cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
+            cloudtrail_client = connect_cloudtrail(credentials, region, True)
             if args.force or prompt_4_yes_no('CloudTrail is stopped in %s. Do you want to start it' % region):
                 cloudtrail_client.start_logging(Name = name)
 
@@ -84,7 +84,7 @@ def main(args):
             chosen_region = prompt_4_value('Which region ID do you want to enable global services logging in', regions, None, True, True, is_question = True)
             for region, name in global_enabled_regions:
                 if region != chosen_region:
-                    cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region, True)
+                    cloudtrail_client = connect_cloudtrail(credentials, region, True)
                     cloudtrail_client.update_trail(Name = name, IncludeGlobalServiceEvents = False)
 
 

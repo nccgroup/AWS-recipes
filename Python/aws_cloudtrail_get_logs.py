@@ -97,14 +97,14 @@ def main(args):
         return 42
 
     # Search for AWS credentials
-    key_id, secret, session_token = read_creds(profile_name)
-    if not key_id:
+    credentials = read_creds(profile_name)
+    if not credentials['AccessKeyId']:
         return 42
 
     # Fetch AWS account ID
     if not args.aws_account_id[0]:
         printInfo('Fetching the AWS account ID...')
-        aws_account_id = get_aws_account_id(connect_iam(key_id, secret, session_token))
+        aws_account_id = get_aws_account_id(connect_iam(credentials))
     else:
         aws_account_id = args.aws_account_id[0]
     global cloudtrail_log_path
@@ -119,7 +119,7 @@ def main(args):
     for region in build_region_list('cloudtrail', args.regions, args.with_gov, args.with_cn):
 
         # Connect to CloudTrail
-        cloudtrail_client = connect_cloudtrail(key_id, secret, session_token, region)
+        cloudtrail_client = connect_cloudtrail(credentials, region)
         if not cloudtrail_client:
             continue
 
@@ -130,9 +130,9 @@ def main(args):
             prefix = trail['S3KeyPrefix'] if 'S3KeyPrefix' in trail else ''
 
         # Connect to S3
-        manage_dictionary(s3_clients, region, connect_s3(key_id, secret, session_token, region))
+        manage_dictionary(s3_clients, region, connect_s3(credentials, region))
         target_bucket_region = get_s3_bucket_location(s3_clients[region], bucket_name)
-        manage_dictionary(s3_clients, target_bucket_region, connect_s3(key_id, secret, session_token, target_bucket_region))
+        manage_dictionary(s3_clients, target_bucket_region, connect_s3(credentials, target_bucket_region))
         s3_client = s3_clients[target_bucket_region]
 
         # Generate base path for files
