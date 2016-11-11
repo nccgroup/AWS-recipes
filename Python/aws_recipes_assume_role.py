@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Import opinel
-from opinel.utils_sts import *
+from opinel.utils import *
 
 # Import stock packages
 import sys
@@ -16,15 +16,26 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.0'):
+    if not check_opinel_version('1.0.3'):
         return 42
 
-    # Assume role and store credentials
+    # Read creds automatically prompts for MFA code and assumes a role if role is already configured
     try:
-        assume_role_and_save_in_credentials(args.profile[0], args.role_arn[0], args.role_session_name[0], args.mfa_serial[0], args.mfa_code[0], args.external_id[0])
+        credentials = read_creds(args.profile[0], mfa_code = args.mfa_code, mfa_serial_arg = args.mfa_serial)
+        print(str(credentials))
     except Exception as e:
         printException(e)
         return 42
+
+    # If the role's ARN was provided...
+    if args.role_arn:
+        if not args.role_name:
+            printError('Error: you must specify a name for this role.')
+            return 42
+        role_session_name = args.role_session_name if args.role_session_name else 'aws-recipes-%s' % str(datetime.datetime.utcnow()).replace(' ', '_').replace(':','-')
+        assume_role(args.role_name, credentials, args.role_arn, role_session_name)
+
+        # TODO save profile to config if not there
 
 
 ########################################
@@ -34,18 +45,17 @@ def main(args):
 add_sts_argument(parser, 'mfa-serial')
 add_sts_argument(parser, 'mfa-code')
 add_sts_argument(parser, 'external-id')
-
-parser.add_argument('--role-arn',
-                    dest='role_arn',
-                    required=True,
-                    nargs='+',
-                    help='Role to be assumed.')
+add_sts_argument(parser, 'role-arn')
 
 parser.add_argument('--role-session-name',
                     dest='role_session_name',
-                    required=True,
-                    nargs='+',
-                    help='The identifier for the assumed role session. A new profile will be created as profile-role_session_name.')
+                    default=None,
+                    help='The identifier for the assumed role session.')
+
+parser.add_argument('--role-name',
+                    dest='role_name',
+                    default=None,
+                    help='The identifier for the assumed role.')
 
 args = parser.parse_args()
 

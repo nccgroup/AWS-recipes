@@ -3,7 +3,6 @@
 # Import opinel
 from opinel.utils import *
 from opinel.utils_iam import *
-from opinel.utils_sts import *
 
 # Import stock packages
 import sys
@@ -18,12 +17,12 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.2'):
+    if not check_opinel_version('1.0.3'):
         return 42
 
-    # Init STS session
+    # Read creds automatically prompts for MFA code and initiates a session if expired
     try:
-        init_sts_session_and_save_in_credentials(args.profile[0], mfa_code = args.mfa_code[0], mfa_serial_arg = args.mfa_serial[0])
+        credentials = read_creds(args.profile[0], mfa_code = args.mfa_code, mfa_serial_arg = args.mfa_serial, force_init = True)
     except Exception as e:
         printException(e)
         return 42
