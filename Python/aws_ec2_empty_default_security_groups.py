@@ -17,7 +17,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.0'):
+    if not check_opinel_version('1.0.3'):
         return 42
 
     # Arguments
@@ -27,7 +27,7 @@ def main(args):
     regions = build_region_list('ec2', args.regions, args.with_gov, args.with_cn)
 
     # Search for AWS credentials
-    key_id, secret, session_token = read_creds(profile_name)
+    credentials = read_creds(profile_name)
     if not key_id:
         return 42
 
@@ -35,7 +35,7 @@ def main(args):
     for region in regions:
 
         # Connect to EC2
-        ec2_client = connect_ec2(key_id, secret, session_token, region)
+        ec2_client = connect_ec2(credentials, region)
         if not ec2_client:
             continue
 
