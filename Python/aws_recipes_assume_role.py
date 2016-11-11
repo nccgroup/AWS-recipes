@@ -16,7 +16,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.3'):
+    if not check_opinel_version('1.0.4'):
         return 42
 
     # Read creds automatically prompts for MFA code and assumes a role if role is already configured

@@ -17,14 +17,12 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.3'):
+    if not check_opinel_version('1.0.4'):
         return 42
 
     # Read creds automatically prompts for MFA code and initiates a session if expired
-    try:
-        credentials = read_creds(args.profile[0], mfa_code = args.mfa_code, mfa_serial_arg = args.mfa_serial, force_init = True)
-    except Exception as e:
-        printException(e)
+    credentials = read_creds(args.profile[0], mfa_code = args.mfa_code, mfa_serial_arg = args.mfa_serial, force_init = True)
+    if not credentials['AccessKeyId']:
         return 42
 
 
