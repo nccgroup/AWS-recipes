@@ -79,7 +79,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.11.0'):
+    if not check_opinel_version('1.0.3'):
         return 42
 
     # Arguments
