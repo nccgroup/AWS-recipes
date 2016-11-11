@@ -71,7 +71,7 @@ def main(args, default_args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('0.10.0'):
+    if not check_opinel_version('1.0.3'):
         return 42
 
     # Arguments
@@ -81,12 +81,12 @@ def main(args, default_args):
         return 42
 
     # Search for AWS credentials
-    key_id, secret, session_token = read_creds(profile_name)
-    if not key_id:
+    credentials = read_creds(profile_name)
+    if not credentials['AccessKeyId']:
         return 42
 
     # Connect to IAM
-    iam_client = connect_iam(key_id, secret, session_token)
+    iam_client = connect_iam(credentials)
     if not iam_client:
         return 42
 
