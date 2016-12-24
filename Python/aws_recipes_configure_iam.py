@@ -24,11 +24,11 @@ def main(args):
     profile_name = args.profile[0]
 
     # Read credentials from a CSV file
-    if args.csv_credentials[0]:
+    if args.csv_credentials:
         credentials = {}
-        credentials['AccessKeyId'], credentials['SecretAccessKey'], credentials['SerialNumber'] = read_creds_from_csv(args.csv_credentials[0])
+        credentials['AccessKeyId'], credentials['SecretAccessKey'], credentials['SerialNumber'] = read_creds_from_csv(args.csv_credentials)
         if not credentials['AccessKeyId'] or not credentials['SecretAccessKey']:
-            printError('Failed to read credentials from %s' % args.csv_credentials[0])
+            printError('Failed to read credentials from %s' % args.csv_credentials)
             return 42
         else:
             use_found_credentials = True
@@ -81,8 +81,8 @@ def main(args):
     write_creds_to_aws_credentials_file(profile_name, credentials)
 
     # Delete CSV file?
-    if args.csv_credentials[0] and prompt_4_yes_no('Do you want to delete the CSV file that contains your long-lived credentials?'):
-        os.remove(args.csv_credentials[0])
+    if args.csv_credentials and prompt_4_yes_no('Do you want to delete the CSV file that contains your long-lived credentials?'):
+        os.remove(args.csv_credentials)
 
 ########################################
 ##### Parse arguments and call main()

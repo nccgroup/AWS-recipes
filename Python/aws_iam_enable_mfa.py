@@ -38,16 +38,16 @@ def main(args):
     # Set the user name
     if not user_name:
         printInfo('Searching for username...')
-        user_name = fetch_from_current_user(iam_client, key_id, 'UserName')
+        user_name = fetch_from_current_user(iam_client, credentials['AccessKeyId'], 'UserName')
         if not user_name:
             printInfo('Error: could not find user name to enable MFA for.')
             return 42
 
     # Create an MFA device
-    mfa_serial = enable_mfa(iam_client, user_name)
+    credentials['SerialNumber'] = enable_mfa(iam_client, user_name)
 
     # Update the no-mfa credentials file
-    write_creds_to_aws_credentials_file(profile_name, key_id = key_id, secret = secret, mfa_serial = mfa_serial)
+    write_creds_to_aws_credentials_file(profile_name, credentials)
     printInfo('Your credentials file has been updated; you may now use aws_recipes_init_sts_session.py to access the API using short-lived credentials.')
 
 
