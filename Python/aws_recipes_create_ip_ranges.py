@@ -44,7 +44,7 @@ def main(args):
     profile_names = get_environment_name(args)
 
     # Initialize the list of regions to work with
-    regions = build_region_list('ec2', args.regions, args.with_gov, args.with_cn)
+    regions = build_region_list('ec2', args.regions, args.partition_name)
 
     # For each profile/environment...
     for profile_name in profile_names:
@@ -185,8 +185,7 @@ def main(args):
 default_args = read_profile_default_args(parser.prog)
 
 add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'with-gov')
-add_common_argument(parser, default_args, 'with-cn')
+add_common_argument(parser, default_args, 'partition-name')
 add_common_argument(parser, default_args, 'force')
 add_common_argument(parser, default_args, 'dry-run')
 
