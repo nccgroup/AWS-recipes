@@ -58,11 +58,6 @@ def main(args):
     if 'SerialNumber' not in credentials or not credentials['SerialNumber']:
         credentials['SerialNumber'] = prompt_4_mfa_serial()
 
-    # Update the profile name if an MFA serial number is stored
-    if credentials['SerialNumber'] and not profile_name.endswith('-nomfa'):
-        profile_name = profile_name + '-nomfa'
-        printInfo('Your long-lived credentials will now be available via the %s profile.' % profile_name)
-
     # Check for overwrite
     while True:
         c = read_creds_from_aws_credentials_file(profile_name)
