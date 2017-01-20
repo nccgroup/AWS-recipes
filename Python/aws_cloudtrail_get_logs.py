@@ -11,8 +11,12 @@ import datetime
 from datetime import date, timedelta
 import gzip
 import os
-from Queue import Queue
 from threading import Thread
+# Python2 vs Python3
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 ########################################
 ##### Globals
@@ -44,10 +48,10 @@ def download_object(q, params):
             except Exception as e:
                 if tries < 2:
                     q.put([key, tries + 1])
-                    print 'Error downloading %s; re-queued.' % filename
+                    printInfo('Error downloading %s; re-queued.' % filename)
                 else:
                     printException(e)
-                    print 'Error downloading %s; discarded.' % filename
+                    printInfo('Error downloading %s; discarded.' % filename)
         q.task_done()
         #show_current_count()
 
@@ -63,7 +67,7 @@ def gunzip_file(q, params):
                 with open(dst, 'wt') as f2:
                     f2.write(file_contents)
               os.remove(src)
-        except Exception, e:
+        except Exception as e:
             printException(e)
             pass
         finally:
@@ -154,7 +158,7 @@ def main(args):
         printInfo('Done')
 
     # Iterate through files and gunzip 'em
-    print 'Decompressing files...'
+    printInfo('Decompressing files...')
     gzlogs = []
     for root, dirnames, filenames in os.walk(download_folder):
         for filename in filenames:
