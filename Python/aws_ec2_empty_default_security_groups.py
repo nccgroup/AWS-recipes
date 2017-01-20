@@ -51,7 +51,7 @@ def main(args):
                         printInfo('Removed all ingress rules from security group %s (%s).' % (sg['GroupName'], sg['GroupId']))
                     else:
                         printInfo('The list of ingress rules for security group %s (%s) is already empty.' % (sg['GroupName'], sg['GroupId']))
-                except Exception, e:
+                except Exception as e:
                     printException(e)
                     pass
                 # Delete egress rules
@@ -61,7 +61,7 @@ def main(args):
                         printInfo('Removed all egress rules from security group %s (%s).' % (sg['GroupName'], sg['GroupId']))
                     else:
                         printInfo('The list of egress rules for security group %s (%s) is already empty.' % (sg['GroupName'], sg['GroupId']))
-                except Exception, e:
+                except Exception as e:
                     printException(e)
                     pass
 
