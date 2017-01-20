@@ -116,7 +116,7 @@ def main(args):
 
     # Iterate through regions
     s3_clients = {}
-    for region in build_region_list('cloudtrail', args.regions, args.with_gov, args.with_cn):
+    for region in build_region_list('cloudtrail', args.regions, args.partition_name):
 
         # Connect to CloudTrail
         cloudtrail_client = connect_cloudtrail(credentials, region)
@@ -168,8 +168,7 @@ def main(args):
 default_args = read_profile_default_args(parser.prog)
 
 add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'with-gov')
-add_common_argument(parser, default_args, 'with-cn')
+add_common_argument(parser, default_args, 'partition-name')
 add_common_argument(parser, default_args, 'dry-run')
 
 parser.add_argument('--aws-account-id',

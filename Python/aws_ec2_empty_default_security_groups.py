@@ -24,11 +24,11 @@ def main(args):
     profile_name = args.profile[0]
 
     # Initialize the list of regions to work with
-    regions = build_region_list('ec2', args.regions, args.with_gov, args.with_cn)
+    regions = build_region_list('ec2', args.regions, args.partition_name)
 
     # Search for AWS credentials
     credentials = read_creds(profile_name)
-    if not key_id:
+    if not credentials['AccessKeyId']:
         return 42
 
     # For each region...
@@ -73,8 +73,7 @@ def main(args):
 default_args = read_profile_default_args(parser.prog)
 
 add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'with-gov')
-add_common_argument(parser, default_args, 'with-cn')
+add_common_argument(parser, default_args, 'partition-name')
 add_common_argument(parser, default_args, 'dry-run')
 
 args = parser.parse_args()

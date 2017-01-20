@@ -3,7 +3,6 @@
 # Import opinel
 from opinel.utils import *
 from opinel.utils_iam import *
-from opinel.utils_sts import *
 
 # Import stock packages
 import shutil

@@ -28,21 +28,115 @@ class TestPythonRecipesClass:
     #
     # Every Python recipe must run fine with --help
     #
-#    def test_all_recipes_help(self):
-#        successful_help_runs = True
-#        for recipe in self.recipes:
-#            recipe_path = os.path.join(self.recipes_dir, recipe)
-#            process = Popen(['python', recipe_path, '--help'], stdout=PIPE)
-#            (output, err) = process.communicate()
-#            exit_code = process.wait()
-#            if exit_code != 0:
-#                print('The recipe %s does not run properly.' % recipe)
-#                successful_help_runs = False
-#        assert successful_help_runs
-
+    def test_all_recipes_help(self):
+        successful_help_runs = True
+        for recipe in self.recipes:
+            recipe_path = os.path.join(self.recipes_dir, recipe)
+            process = Popen(['python', recipe_path, '--help'], stdout=PIPE)
+            (output, err) = process.communicate()
+            exit_code = process.wait()
+            if exit_code != 0:
+                print('The recipe %s does not run properly.' % recipe)
+                successful_help_runs = False
+        assert successful_help_runs
 
     #
-    # Tests for aws_recipes_create_ip_ranges.py
+    # Every python recipe must have a test method
+    #
+    def all_recipes_test_function_must_exist(self):
+        for recipe in self.recipes:
+            methods = dir(self)
+            method_name = 'test_%s' % recipe.replace('.py', '')
+            if method_name not in methods:
+                printError('%s does not exist.' % method_name)
+            assert method_name in methods
+
+    #
+    # Test aws_cloudtrail_enable_all_regions
+    #
+    def test_aws_cloudtrail_enable_all_regions(self):
+        print('a')
+
+    #
+    # Test aws_cloudtrail_get_logs
+    #
+    def test_aws_cloudtrail_get_logs(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_ec2_empty_default_security_groups(self):
+        print('a')
+        # Add rule in default
+        # Check that rule exists in non-default
+        # Checkthat rule exists in default
+        # run tool
+        # check that rule stil exssis in non default
+        # check that rule is gone in default
+
+    #
+    #
+    #
+    def test_aws_iam_create_assume_role_group(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_create_default_groups(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_create_policy(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_create_user(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_delete_user(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_enable_mfa(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_rotate_my_key(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_iam_sort_users(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_recipes_assume_role(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_recipes_configure_iam(self):
+        print('a')
+
+    #
+    # Test aws_recipes_create_ip_ranges.py
     #
     def test_aws_recipes_create_ip_ranges(self):
         successful_aws_recipes_create_ip_ranges_runs = True
@@ -81,3 +175,16 @@ class TestPythonRecipesClass:
                 successful_aws_recipes_create_ip_ranges_runs = False
             os.remove('ip-ranges-default.json')
         assert(successful_aws_recipes_create_ip_ranges_runs)
+
+    #
+    #
+    #
+    def test_aws_recipes_get_permissions(self):
+        print('a')
+
+    #
+    #
+    #
+    def test_aws_recipes_init_sts_session(self):
+        print('a')
+
