@@ -21,7 +21,7 @@ def main(args):
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_opinel_version('1.3.4'):
         return 42
 
     # Arguments
@@ -34,16 +34,17 @@ def main(args):
         return 42
 
     # Connect to IAM
-    iam_client = connect_iam(credentials)
+    iam_client = connect_service('iam', credentials)
     if not iam_client:
         return 42
 
     # Fetch the long-lived key ID if STS credentials are used
-    if session_token:
-        aws_key_id, aws_secret, foo1 = read_creds(profile_name + '-nomfa')
+    if credentials['SessionToken']:
+        akia_creds = read_creds(profile_name + '-nomfa')
     else:
-        aws_key_id = key_id
-        aws_secret = secret
+        akia_creds = credentials
+    aws_key_id = akia_creds['AccessKeyId']
+    aws_secret = akia_creds['SecretAccessKey']
 
     # Set the user name
     if not user_name:
@@ -57,43 +58,38 @@ def main(args):
     try:
         # Create a new IAM key
         printInfo('Creating a new access key for \'%s\'...' % user_name)
-        new_key = iam_client.create_access_key(UserName = user_name)
-        new_key_id = new_key['AccessKey']['AccessKeyId']
-        new_secret = new_key['AccessKey']['SecretAccessKey']
+        new_credentials = iam_client.create_access_key(UserName = user_name)['AccessKey']
         list_access_keys(iam_client, user_name)
     except Exception as e:
         printException(e)
         return 42
 
     # Write the new key
-    if session_token:
-        write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = new_key_id, secret = new_secret, session_token = None)
-    else:
-        write_creds_to_aws_credentials_file(profile_name, key_id = new_key_id, secret = new_secret, session_token = None)
-
-    if session_token:
-        # Init an STS session with the new key
+    if credentials['SessionToken']:
+        write_creds_to_aws_credentials_file(profile_name + '-nomfa', new_credentials)
+        new_credentials = read_creds(profile_name + '-nomfa')
         printInfo('Initiating a session with the new access key...')
-        init_sts_session_and_save_in_credentials(profile_name)
+        new_credentials = init_sts_session(profile_name, new_credentials)
     else:
+        write_creds_to_aws_credentials_file(profile_name, new_credentials)
+        new_credentials = read_creds(profile_name)
         # Sleep because the access key may not be active server-side...
         printInfo('Verifying access with the new key...')
         time.sleep(5)
 
     # Confirm that it works...
     try:
-        new_key_id, new_secret, new_session_token = read_creds(profile_name)
-        new_iam_client = connect_iam(new_key_id, new_secret, new_session_token)
+        new_iam_client = connect_service('iam', new_credentials)
         printInfo('Deleting the old access key...')
         new_iam_client.delete_access_key(AccessKeyId = aws_key_id, UserName = user_name)
     except Exception as e:
         printException(e)
         printInfo('Restoring your old credentials...')
         # Restore the old key here
-        if session_token:
-            write_creds_to_aws_credentials_file(profile_name + '-nomfa', key_id = aws_key_id, secret = aws_secret, session_token = None)
+        if credentials['SessionToken']:
+            write_creds_to_aws_credentials_file(profile_name + '-nomfa', akia_creds) 
         else:
-            write_creds_to_aws_credentials_file(profile_name, key_id = aws_key_id, secret = aws_secret, session_token = None)
+            write_creds_to_aws_credentials_file(profile_name, akia_creds)
         return 42
 
     try:
