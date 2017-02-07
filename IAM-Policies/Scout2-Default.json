@@ -24,7 +24,9 @@
                 "s3:GetBucketVersioning",
                 "s3:GetBucketWebsite",
                 "s3:GetLifecycleConfiguration",
-                "s3:ListAllMyBuckets"
+                "s3:ListAllMyBuckets",
+                "sns:List*",
+                "sns:GetTopicAttributes"
             ],
             "Resource": "*"
         }
