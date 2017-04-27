@@ -1,50 +1,67 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_iam import *
-
-# Import stock opinel
+import os
 import sys
+
+from opinel.utils.aws import connect_service
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printError, printException, printInfo, prompt_4_mfa_serial, prompt_4_value, prompt_4_yes_no
+from opinel.utils.credentials import read_creds_from_csv, read_creds_from_aws_credentials_file, write_creds_to_aws_credentials_file
+from opinel.utils.globals import check_requirements
 
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('csv-credentials')
+    parser.add_argument('mfa-serial')
+    parser.add_argument('mfa-code')
+    parser.parser.add_argument('--role-arn',
+                                dest='role_arn',
+                                default=None,
+                                help='ARN of the assumed role.')
+    parser.parser.add_argument('--external-id',
+                                dest='external_id',
+                                default=None,
+                                help='External ID to use when assuming the role.')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
     # Arguments
     profile_name = args.profile[0]
 
-    # Read credentials from a CSV file
     if args.csv_credentials:
+        # Read credentials from a CSV file
         credentials = {}
         credentials['AccessKeyId'], credentials['SecretAccessKey'], credentials['SerialNumber'] = read_creds_from_csv(args.csv_credentials)
         if not credentials['AccessKeyId'] or not credentials['SecretAccessKey']:
             printError('Failed to read credentials from %s' % args.csv_credentials)
             return 42
-        else:
-            use_found_credentials = True
+        use_found_credentials = True
     else:
         # Check for migration from existing profile to no-mfa profile
         use_found_credentials = False
         credentials = read_creds_from_aws_credentials_file(profile_name)
         if 'AccessKeyId' in credentials and credentials['AccessKeyId'] != None and credentials['SecretAccessKey'] != None and credentials['SerialNumber'] == None and credentials['SessionToken'] == None:
-            if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuring mfa' % profile_name):
+            if prompt_4_yes_no('Found long-lived credentials for the profile \'%s\'. Do you want to use those when configuring MFA' % profile_name):
                use_found_credentials = True
-               iam_client = connect_iam(credentials)
-               if not iam_client:
-                   return 42
+               iam_client = connect_service('iam', credentials)
                try:
                    printInfo('Trying to read the MFA serial number associated with this IAM user...')
-                   user_name = fetch_from_current_user(iam_client, credentials['AccessKeyId'], 'UserName')
+                   user_name = iam_client.get_user()['User']['UserName']
                    mfa_devices = iam_client.list_mfa_devices(UserName = user_name)['MFADevices']
                    credentials['SerialNumber'] = mfa_devices[0]['SerialNumber']
                except Exception as e:
@@ -79,16 +96,5 @@ def main(args):
     if args.csv_credentials and prompt_4_yes_no('Do you want to delete the CSV file that contains your long-lived credentials?'):
         os.remove(args.csv_credentials)
 
-########################################
-##### Parse arguments and call main()
-########################################
-
-init_parser()
-default_args = read_profile_default_args(parser.prog)
-
-add_iam_argument(parser, default_args, 'csv-credentials')
-
-args = parser.parse_args()
-
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())

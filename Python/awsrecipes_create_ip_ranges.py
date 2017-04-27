@@ -1,12 +1,15 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_ec2 import *
-
-# Import stock packages
-import datetime
+import os
 import sys
+
+from opinel.utils.aws import build_region_list, connect_service, get_name, handle_truncated_response
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printInfo, prompt_4_value, prompt_4_yes_no
+from opinel.utils.credentials import read_creds
+from opinel.utils.fs import read_ip_ranges, save_ip_ranges
+from opinel.utils.globals import check_requirements
 
 
 ########################################
@@ -25,29 +28,59 @@ def new_prefix(ip_prefix, obj):
     return obj
 
 
-
-
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('force')
+    parser.add_argument('dry-run')
+    parser.add_argument('regions')
+    parser.add_argument('partition-name')
+    parser.parser.add_argument('--interactive',
+                        dest='interactive',
+                        default=False,
+                        action='store_true',
+                        help='Interactive prompt to manually enter CIDRs.')
+    parser.parser.add_argument('--csv-ip-ranges',
+                        dest='csv_ip_ranges',
+                        default=[],
+                        nargs='+',
+                        help='CSV file(s) containing CIDRs information.')
+    parser.parser.add_argument('--skip-first-line',
+                        dest='skip_first_line',
+                        default=False,
+                        action='store_true',
+                        help='Skip first line when parsing CSV file.')
+    parser.parser.add_argument('--attributes',
+                        dest='attributes',
+                        default=[],
+                        nargs='+',
+                        help='Name of the attributes to enter for each CIDR.')
+    parser.parser.add_argument('--mappings',
+                        dest='mappings',
+                        default=[],
+                        nargs='+',
+                        help='Column number matching attributes when headers differ.')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
-
-    # Get the environment name
-    profile_names = get_environment_name(args)
 
     # Initialize the list of regions to work with
     regions = build_region_list('ec2', args.regions, args.partition_name)
 
     # For each profile/environment...
-    for profile_name in profile_names:
+    for profile_name in args.profile:
 
         # Interactive mode
         if args.interactive:
@@ -140,27 +173,27 @@ def main(args):
             for region in regions:
 
                 # Connect to EC2
-                ec2_client = connect_ec2(credentials, region)
+                ec2_client = connect_service('ec2', credentials, region)
                 if not ec2_client:
                     continue
 
                 # Get public IP addresses associated with EC2 instances
                 printInfo('...in %s: EC2 instances' % region)
-                reservations = handle_truncated_response(ec2_client.describe_instances, {}, 'NextToken', ['Reservations'])
+                reservations = handle_truncated_response(ec2_client.describe_instances, {}, ['Reservations'])
                 for reservation in reservations['Reservations']:
                     for i in reservation['Instances']:
                         if 'PublicIpAddress' in i:
                             ip_addresses[i['PublicIpAddress']] = new_ip_info(region, i['InstanceId'], False)
-                            get_name(ip_addresses[i['PublicIpAddress']], i, 'InstanceId')
+                            get_name(i, ip_addresses[i['PublicIpAddress']], 'InstanceId')
                         if 'NetworkInterfaces' in i:
                             for eni in i['NetworkInterfaces']:
                                 if 'Association' in eni:
                                     ip_addresses[eni['Association']['PublicIp']] = new_ip_info(region, i['InstanceId'], False) # At that point, we don't know whether it's an EIP or not...
-                                    get_name(ip_addresses[eni['Association']['PublicIp']], i, 'InstanceId')
+                                    get_name(i, ip_addresses[eni['Association']['PublicIp']], 'InstanceId')
 
                 # Get all EIPs (to handle unassigned cases)
                 printInfo('...in %s: Elastic IP addresses' % region)
-                eips = handle_truncated_response(ec2_client.describe_addresses, {}, 'NextToken', ['Addresses'])
+                eips = handle_truncated_response(ec2_client.describe_addresses, {}, ['Addresses'])
                 for eip in eips['Addresses']:
                     instance_id = eip['InstanceId'] if 'InstanceId' in eip else None
                     # EC2-Classic non associated EIPs have an empty string for instance ID (instead of lacking the attribute in VPC)
@@ -177,45 +210,5 @@ def main(args):
         # Generate an ip-ranges-<profile>.json file
         save_ip_ranges(profile_name, prefixes, args.force_write, args.debug)
 
-
-########################################
-##### Parse arguments and call main()
-########################################
-
-default_args = read_profile_default_args(parser.prog)
-
-add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'partition-name')
-add_common_argument(parser, default_args, 'force')
-add_common_argument(parser, default_args, 'dry-run')
-
-parser.add_argument('--interactive',
-                    dest='interactive',
-                    default=False,
-                    action='store_true',
-                    help='Interactive prompt to manually enter CIDRs.')
-parser.add_argument('--csv-ip-ranges',
-                    dest='csv_ip_ranges',
-                    default=[],
-                    nargs='+',
-                    help='CSV file(s) containing CIDRs information.')
-parser.add_argument('--skip-first-line',
-                    dest='skip_first_line',
-                    default=False,
-                    action='store_true',
-                    help='Skip first line when parsing CSV file.')
-parser.add_argument('--attributes',
-                    dest='attributes',
-                    default=[],
-                    nargs='+',
-                    help='Name of the attributes to enter for each CIDR.')
-parser.add_argument('--mappings',
-                    dest='mappings',
-                    default=[],
-                    nargs='+',
-                    help='Column number matching attributes when headers differ.')
-
-args = parser.parse_args()
-
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())
