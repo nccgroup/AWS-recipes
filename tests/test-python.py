@@ -140,7 +140,7 @@ class TestPythonRecipesClass:
     #
     def test_aws_recipes_create_ip_ranges(self):
         successful_aws_recipes_create_ip_ranges_runs = True
-        recipe = os.path.join(self.recipes_dir, 'aws_recipes_create_ip_ranges.py')
+        recipe = os.path.join(self.recipes_dir, 'awsrecipes_create_ip_ranges.py')
         test_cases = [
             # Matching header names, use all data
             ['--csv-ip-ranges tests/data/ip-ranges-1.csv --force', 'ip-ranges-1a.json'],
