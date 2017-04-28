@@ -1,9 +1,11 @@
-# Import opinel
-from opinel.utils import *
+# -*- coding: utf-8 -*-
 
-# Import stock packages
 import os
 from subprocess import Popen, PIPE
+
+from opinel.utils.console import printError
+from opinel.utils.fs import read_ip_ranges
+
 
 #
 # AWS recipes test class (Python only)
@@ -21,7 +23,7 @@ class TestPythonRecipesClass:
     #
     def setUp(self):
         self.recipes_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../Python'))
-        self.recipes = [f for f in os.listdir(self.recipes_dir) if os.path.isfile(os.path.join(self.recipes_dir, f)) and f.endswith('.py')]
+        self.recipes = [f for f in os.listdir(self.recipes_dir) if os.path.isfile(os.path.join(self.recipes_dir, f)) and f.startswith('awsrecipes_') and f.endswith('.py')]
         self.data_dir = 'tests/data'
         self.result_dir = 'tests/results'
 
@@ -102,13 +104,13 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_aws_iam_delete_user(self):
+    def test_awsrecipes_delete_iam_user(self):
         print('a')
 
     #
     #
     #
-    def test_aws_iam_enable_mfa(self):
+    def test_awsrecipes_enable_mfa(self):
         print('a')
 
     #
@@ -126,19 +128,19 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_aws_recipes_assume_role(self):
+    def test_awsrecipes_assume_role(self):
         print('a')
 
     #
     #
     #
-    def test_aws_recipes_configure_iam(self):
+    def test_awsrecipes_configure_iam(self):
         print('a')
 
     #
     # Test aws_recipes_create_ip_ranges.py
     #
-    def test_aws_recipes_create_ip_ranges(self):
+    def test_awsrecipes_create_ip_ranges(self):
         successful_aws_recipes_create_ip_ranges_runs = True
         recipe = os.path.join(self.recipes_dir, 'awsrecipes_create_ip_ranges.py')
         test_cases = [
@@ -185,6 +187,6 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_aws_recipes_init_sts_session(self):
+    def test_awsrecipes_init_sts_session(self):
         print('a')
 
