@@ -104,7 +104,7 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_awsrecipes_delete_iam_user(self):
+    def test_aws_recipes_delete_iam_user(self):
         print('a')
 
     #
