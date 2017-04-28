@@ -181,7 +181,7 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_aws_recipes_get_permissions(self):
+    def test_aws_recipes_get_iam_permissions(self):
         print('a')
 
     #
