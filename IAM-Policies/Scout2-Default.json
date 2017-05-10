@@ -18,6 +18,8 @@
                 "ec2:DescribeVpcs",
                 "elasticache:DescribeCacheClusters",
                 "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticmapreduce:DescribeCluster",
+                "elasticmapreduce:ListClusters",
                 "iam:GenerateCredentialReport",
                 "iam:GetAccountPasswordPolicy",
                 "iam:GetCredentialReport",
