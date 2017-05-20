@@ -1,32 +1,38 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_iam import *
-
-# Import stock packages
-import shutil
+import os
 import sys
 import time
-import traceback
 
+from opinel.services.iam import show_access_keys
+from opinel.utils.aws import connect_service, get_username
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printInfo, printException
+from opinel.utils.credentials import read_creds, write_creds_to_aws_credentials_file, init_sts_session
+from opinel.utils.globals import check_requirements
 
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.3.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
-    # Arguments
+    # Get profile name
     profile_name = args.profile[0]
-    user_name = args.user_name[0]
 
     # Search for AWS credentials
     credentials = read_creds(profile_name)
@@ -46,20 +52,16 @@ def main(args):
     aws_key_id = akia_creds['AccessKeyId']
     aws_secret = akia_creds['SecretAccessKey']
 
-    # Set the user name
-    if not user_name:
-        printInfo('Searching for username...')
-        user_name = fetch_from_current_user(iam_client, aws_key_id, 'UserName')
-        if not user_name:
-            printError('Error: could not find user name to rotate the key for.')
-            return 42
+    # Fetch username
+    printInfo('Fetching username...')
+    user_name = get_username(credentials)
 
     # Create the new key
     try:
         # Create a new IAM key
         printInfo('Creating a new access key for \'%s\'...' % user_name)
         new_credentials = iam_client.create_access_key(UserName = user_name)['AccessKey']
-        list_access_keys(iam_client, user_name)
+        show_access_keys(iam_client, user_name)
     except Exception as e:
         printException(e)
         return 42
@@ -93,26 +95,12 @@ def main(args):
         return 42
 
     try:
-        list_access_keys(new_iam_client, user_name)
+        show_access_keys(new_iam_client, user_name)
         printInfo('Success !')
     except Exception as e:
         printException(e)
         return 42
 
 
-########################################
-##### Additional arguments
-########################################
-
-default_args = read_profile_default_args(parser.prog)
-
-add_iam_argument(parser, default_args, 'user-name')
-
-########################################
-##### Parse arguments and call main()
-########################################
-
-args = parser.parse_args()
-
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())
