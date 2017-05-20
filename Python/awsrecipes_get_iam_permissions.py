@@ -1,11 +1,18 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_iam import *
-
-# Import stock packages
+import json
+import os
+import re
 import sys
+
+from iampoliciesgonewild import all_permissions, expand_policy
+
+from opinel.utils.aws import connect_service, handle_truncated_response
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printInfo, printException
+from opinel.utils.credentials import read_creds
+from opinel.utils.globals import check_requirements, manage_dictionary
 
 ########################################
 ##### Globals
@@ -28,30 +35,12 @@ def can_merge_statements(s1, s2):
     # Resource or NotResource ?
     s1_resource_type = 'Resource' if 'Resource' in s1 else 'NotResource'
     s2_resource_type = 'Resource' if 'Resource' in s2 else 'NotResource'
-    if s1['Effect'] == s2['Effect'] and s1_action_type == s2_action_type and s1_resource_type == s2_resource_type and s1['Resource'] == s2['Resource']:
+    if s1['Effect'] == s2['Effect'] and s1_action_type == s2_action_type and s1_resource_type == s2_resource_type and s1[s1_resource_type] == s2[s2_resource_type]:
         if ((('Condition' in s1 and 'Condition' in s2) and s1['Condition'] == s2['Condition']) or ('Condition' not in s1 and 'Condition' not in s2)):
             return True
     return False
 
-#
-# Expand actions that contain wildcard characters
-#
-def expand_wildcard_actions(actions, all_permissions):
-    new_actions = []
-    for action in actions:
-        # Do not expand *, only when it's service-specific
-        if action != '*' and '*' in action: # and service in all_permissions:
-            service, action = action.split(':')
-            if service in all_permissions:
-                action = r'%s' % action.replace('*', '.*')
-                re_action = re.compile(action)
-                all_actions = all_permissions[service]['Actions']
-                new_actions = new_actions + ['%s:%s' % (service, a) for a in all_actions for m in [re_action.search(a)] if m]
-            else:
-                new_actions.append('%s:%s' % (service, action))
-        else:
-            new_actions.append(action)
-    return new_actions
+
 
 #
 # Extract value from an ARN
@@ -130,35 +119,36 @@ def get_policies(iam_client, managed_policies, resource_type, resource_name):
             fetched_policies = fetched_policies + get_policies(iam_client, managed_policies, 'group', group['GroupName'])
     return fetched_policies
 
-#
-# Merge multiple policy documents into a single large one
-#
-def merge_policies(policy_documents, all_permissions):
-    policy = {}
-    policy['Version'] = ''
-    policy['Statement'] = []
-    for doc in policy_documents:
-        if not doc:
+
+def merge_policies(policy_documents):
+    """
+    Merge multiple policy documents into a single, combined policy
+    Actions of allow statements defined with the same resources and conditions are combined into a unique list
+                                        .
+    :param policy_documents:            Policy documents to be merged (e.g. all user and group policies applying to a single user)
+    :return:                            Combined policy
+    """
+    macro_policy = {'Version': '', 'Statement': []}
+    for policy_document in policy_documents:
+        if not policy_document:
             continue
-        # TODO: handle this in the merge / normalize statement function
-        if 'Version' in doc:
-            policy['Version'] = doc['Version'] if doc['Version'] > policy['Version'] else policy['Version']
-        else:
-            policy['Version'] = ''
-        for s1 in doc['Statement']:
+        expand_policy(policy = policy_document)
+        if 'Version' in policy_document:
+            macro_policy['Version'] = policy_document['Version'] if policy_document['Version'] > macro_policy['Version'] else policy_document['Version']
+        for s1 in policy_document['Statement']:
             merged = False
             s1_action_type, s1_resource_type = normalize_statement(s1)
-            for s2 in policy['Statement']:
-                 s2_action_type, s2_resource_type = normalize_statement(s2)
-                 if can_merge_statements(s1, s2):
-                    s2[s2_action_type] = sorted(list(set(expand_wildcard_actions(s1[s1_action_type], all_permissions) + s2[s2_action_type])))
+            for s2 in macro_policy['Statement']:
+                s2_action_type, s2_resource_type = normalize_statement(s2)
+                if can_merge_statements(s1, s2):
+                    s2[s2_action_type] = sorted(list(set(s1[s1_action_type] + s2[s2_action_type])))
                     merged = True
             if not merged:
                 if 'Sid' in s1:
                     s1.pop('Sid')
-                s1[s1_action_type] = sorted(expand_wildcard_actions(s1[s1_action_type], all_permissions))
-                policy['Statement'].append(s1)
-    return policy
+                s1[s1_action_type] = sorted(list(set(s1[s1_action_type])))
+                macro_policy['Statement'].append(s1)
+    return macro_policy
 
 #
 # Make sure action and resource are formatted as a list
@@ -180,8 +170,8 @@ def normalize_statement(statement):
 #
 # Expand permissions and write the document to a file
 #
-def write_permissions(policy_documents, all_permissions, resource_type, resource_name):
-        merged_policy_document = merge_policies(policy_documents, all_permissions)
+def write_permissions(policy_document, resource_type, resource_name):
+        #merged_policy_document = merge_policies(policy_documents, all_permissions)
         target_dir = os.path.join(PERMISSIONS_DIR, resource_type)
         if resource_type == 'policy':
             # Extract account ID from policy arn and make sub folder per account
@@ -192,20 +182,68 @@ def write_permissions(policy_documents, all_permissions, resource_type, resource
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)
         with open (os.path.join(target_dir, '%s.json' % resource_name), 'wt') as f:
-            f.write(json.dumps(merged_policy_document, indent = 4, sort_keys = True))
+            f.write(json.dumps(policy_document, indent = 4, sort_keys = True))
 
 
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('user-name', help_string = 'Name of the IAM user(s).')
+    parser.parser.add_argument('--all-users',
+                               dest='all_users',
+                               default=False,
+                               action='store_true',
+                               help='Go through all IAM users')
+    parser.parser.add_argument('--arn',
+                        dest='arn',
+                        default=[],
+                        nargs='+',
+                        help='ARN of the target group(s), role(s), or user(s)')
+    parser.parser.add_argument('--group-name',
+                        dest='group_name',
+                        default=[],
+                        nargs='+',
+                        help='Name of the IAM group(s)')
+    parser.parser.add_argument('--all-groups',
+                                dest='all_groups',
+                               default=False,
+                               action='store_true',
+                               help='Go through all IAM groups')
+    parser.parser.add_argument('--role-name',
+                        dest='role_name',
+                        default=[],
+                        nargs='+',
+                        help='Name of the IAM role(s)')
+    parser.parser.add_argument('--all-roles',
+                                dest='all_roles',
+                               default=False,
+                               action='store_true',
+                               help='Go through all IAM roles')
+    parser.parser.add_argument('--policy-arn',
+                        dest='policy_arn',
+                        default=[],
+                        nargs='+',
+                        help='ARN of the IAM policy/ies')
+    parser.parser.add_argument('--all',
+                        dest='all',
+                        default=False,
+                        action='store_true',
+                        help='Go through all IAM resources')
+
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
     # Arguments
@@ -217,17 +255,9 @@ def main(args):
         return 42
 
     # Connect to IAM
-    iam_client = connect_iam(credentials)
+    iam_client = connect_service('iam', credentials)
     if not iam_client:
         return 42
-
-    # Initialize the list of AWS permissions
-    all_permissions = {}
-    tool_dir, foo = os.path.split(__file__)
-    with open(os.path.join(tool_dir, '../data/master_permissions.json'), 'rt') as f:
-        permissions = json.loads(f.read())
-        for s in permissions['AWS_PERMISSIONS']:
-            all_permissions[permissions['AWS_PERMISSIONS'][s]['StringPrefix']] = permissions['AWS_PERMISSIONS'][s]
 
     # Normalize targets
     targets = []
@@ -237,75 +267,46 @@ def main(args):
             resource = arn_match.groups()[4].split('/')
             targets.append((resource[0], resource[-1]))
     for group_name in args.group_name:
-        targets.append(('group', group_name))
+        if group_name:
+            targets.append(('group', group_name))
     for role_name in args.role_name:
-        targets.append(('role', role_name))
+        if role_name:
+            targets.append(('role', role_name))
     for user_name in args.user_name:
-        targets.append(('user', user_name))
-
-    # Will cover all groups, roles, and users
-    if args.all:
+        if user_name:
+            targets.append(('user', user_name))
+    if args.all or args.all_groups:
         printInfo('Fetching all IAM groups...')
-        for group in handle_truncated_response(iam_client.list_groups, {}, 'Marker', ['Groups'])['Groups']:
+        for group in handle_truncated_response(iam_client.list_groups, {}, ['Groups'])['Groups']:
             targets.append(('group', group['GroupName']))
+    if args.all or args.all_roles:
         printInfo('Fetching all IAM roles...')
-        for role in handle_truncated_response(iam_client.list_roles, {}, 'Marker', ['Roles'])['Roles']:
+        for role in handle_truncated_response(iam_client.list_roles, {}, ['Roles'])['Roles']:
             targets.append(('role', role['RoleName']))
+    if args.all or args.all_users:
         printInfo('Fetching all IAM users...')
-        for user in handle_truncated_response(iam_client.list_users, {}, 'Marker', ['Users'])['Users']:
+        for user in handle_truncated_response(iam_client.list_users, {}, ['Users'])['Users']:
             targets.append(('user', user['UserName']))
 
     # Get all policies that apply to the targets and aggregate them into a single file
-    printInfo('Fetching all policies in use...')
+    printInfo('Fetching all inline and managed policies in use...')
     managed_policies = {}
     for resource_type, resource_name in targets:
         policy_documents = get_policies(iam_client, managed_policies, resource_type, resource_name)
-        write_permissions(policy_documents, all_permissions, resource_type, resource_name)
+        write_permissions(merge_policies(policy_documents), resource_type, resource_name)
 
     # Get requested managed policies
     for policy_arn in args.policy_arn:
         policy_documents = [ get_managed_policy_document(iam_client, policy_arn, managed_policies) ]
-        write_permissions(policy_documents, all_permissions, 'policy', policy_arn)
+        write_permissions(merge_policies(policy_documents), 'policy', policy_arn)
 
 
 ########################################
 ##### Parse arguments and call main()
 ########################################
 
-default_args = read_profile_default_args(parser.prog)
 
-parser.add_argument('--arn',
-                    dest='arn',
-                    default=[],
-                    nargs='+',
-                    help='ARN of the target group(s), role(s), or user(s)')
-parser.add_argument('--group-name',
-                    dest='group_name',
-                    default=[],
-                    nargs='+',
-                    help='Name of the IAM group(s)')
-parser.add_argument('--role-name',
-                    dest='role_name',
-                    default=[],
-                    nargs='+',
-                    help='Name of the IAM role(s)')
-parser.add_argument('--user-name',
-                    dest='user_name',
-                    default=[],
-                    nargs='+',
-                    help='Name of the IAM user(s)')
-parser.add_argument('--policy-arn',
-                    dest='policy_arn',
-                    default=[],
-                    nargs='+',
-                    help='ARN of the IAM policy/ies')
-parser.add_argument('--all',
-                    dest='all',
-                    default=False,
-                    action='store_true',
-                    help='Go through all IAM resources')
 
-args = parser.parse_args()
 
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())

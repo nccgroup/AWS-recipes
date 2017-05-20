@@ -1,10 +1,19 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_cloudtrail import *
-from opinel.utils_iam import *
-from opinel.utils_s3 import *
+import re
+import os
+import sys
+
+from opinel.services.iam import get_aws_account_id
+from opinel.services.s3 import get_s3_bucket_location
+from opinel.utils.aws import connect_service, build_region_list, handle_truncated_response
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printError, printException, printInfo
+from opinel.utils.credentials import read_creds
+from opinel.utils.globals import check_requirements, manage_dictionary
+from opinel.utils.threads import thread_work
+
 
 # Import stock packages
 import datetime
@@ -24,6 +33,10 @@ except ImportError:
 
 cloudtrail_log_path = 'AWSLogs/AWS_ACCOUNT_ID/CloudTrail/REGION/'
 download_folder = 'trails'
+
+
+
+
 
 ########################################
 ##### Helpers
@@ -73,18 +86,47 @@ def gunzip_file(q, params):
         finally:
             q.task_done()
 
+
+
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('regions')
+    parser.add_argument('partition-name')
+    parser.add_argument('bucket-name')
+    parser.parser.add_argument('--aws-account-id',
+                                dest='aws_account_id',
+                                default=[ None ],
+                                nargs='+',
+                                help='Bleh.')
+    parser.parser.add_argument('--from',
+                                dest='from_date',
+                                default=[ None ],
+                                nargs='+',
+                                help='Bleh.')
+    parser.parser.add_argument('--to',
+                                dest='to_date',
+                                default=[ None ],
+                                nargs='+',
+                                help='Bleh.')
+
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
+
+
 
     # Arguments
     profile_name = args.profile[0]
@@ -108,7 +150,7 @@ def main(args):
     # Fetch AWS account ID
     if not args.aws_account_id[0]:
         printInfo('Fetching the AWS account ID...')
-        aws_account_id = get_aws_account_id(connect_iam(credentials))
+        aws_account_id = get_aws_account_id(connect_service('iam', credentials))
     else:
         aws_account_id = args.aws_account_id[0]
     global cloudtrail_log_path
@@ -123,7 +165,7 @@ def main(args):
     for region in build_region_list('cloudtrail', args.regions, args.partition_name):
 
         # Connect to CloudTrail
-        cloudtrail_client = connect_cloudtrail(credentials, region)
+        cloudtrail_client = connect_service('cloudtrail', credentials, region)
         if not cloudtrail_client:
             continue
 
@@ -134,9 +176,9 @@ def main(args):
             prefix = trail['S3KeyPrefix'] if 'S3KeyPrefix' in trail else ''
 
         # Connect to S3
-        manage_dictionary(s3_clients, region, connect_s3(credentials, region))
+        manage_dictionary(s3_clients, region, connect_service('s3', credentials, region))
         target_bucket_region = get_s3_bucket_location(s3_clients[region], bucket_name)
-        manage_dictionary(s3_clients, target_bucket_region, connect_s3(credentials, target_bucket_region))
+        manage_dictionary(s3_clients, target_bucket_region, connect_service('s3', credentials, target_bucket_region))
         s3_client = s3_clients[target_bucket_region]
 
         # Generate base path for files
@@ -149,10 +191,11 @@ def main(args):
             day = from_date + timedelta(days=i)
             folder_path = os.path.join(log_path, day.strftime("%Y/%m/%d"))
             try:
-                objects = handle_truncated_response(s3_client.list_objects, {'Bucket': bucket_name, 'Prefix': folder_path}, 'Marker', ['Contents'])
+                objects = handle_truncated_response(s3_client.list_objects, {'Bucket': bucket_name, 'Prefix': folder_path}, ['Contents'])
                 for o in objects['Contents']:
                     keys.append([o['Key'], 0])
-            except:
+            except Exception as e:
+                printException(e)
                 pass
         thread_work(keys, download_object, params = {'Bucket': bucket_name, 'S3Client': s3_client}, num_threads = 100)
         printInfo('Done')
@@ -165,38 +208,6 @@ def main(args):
             gzlogs.append(filename)
     thread_work(gzlogs, gunzip_file, num_threads = 30)
 
-########################################
-##### Additional arguments
-########################################
-
-default_args = read_profile_default_args(parser.prog)
-
-add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'partition-name')
-add_common_argument(parser, default_args, 'dry-run')
-
-parser.add_argument('--aws-account-id',
-                    dest='aws_account_id',
-                    default=[ None ],
-                    nargs='+',
-                    help='Bleh.')
-parser.add_argument('--from',
-                    dest='from_date',
-                    default=[ None ],
-                    nargs='+',
-                    help='Bleh.')
-
-parser.add_argument('--to',
-                    dest='to_date',
-                    default=[ None ],
-                    nargs='+',
-                    help='Bleh.')
-
-########################################
-##### Parse arguments and call main()
-########################################
-
-args = parser.parse_args()
 
 if __name__ == '__main__':
-    main(args)
+    main()
