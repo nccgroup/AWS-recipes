@@ -1,11 +1,19 @@
 language: python
+
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "nightly"
-# command to install dependencies
-install: "pip install -r requirements.txt"
-# command to run tests
-script: nosetests tests/IAM-policies.py tests/test-python.py
+    - "2.7"
+    - "3.3"
+    - "3.4"
+    - "3.5"
+    - "3.6"
+
+before_script:
+    - pip install -r requirements.txt
+    - pip install coveralls
+
+script:
+    - nosetests --with-coverage tests/IAM-policies.py
+    - nosetests --with-coverage tests/test-ptyhon.py
+
+after_success:
+    - coveralls

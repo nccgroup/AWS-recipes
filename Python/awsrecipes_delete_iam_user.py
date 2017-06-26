@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
 from opinel.utils.aws import connect_service
 from opinel.utils.cli_parser import OpinelArgumentParser
-from opinel.utils.console import configPrintException
+from opinel.utils.console import configPrintException, printError
 from opinel.utils.credentials import read_creds
 from opinel.utils.globals import check_requirements
 from opinel.services.iam import delete_user
@@ -21,12 +22,7 @@ def main():
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.parser.add_argument('--user-name',
-                        dest='user_name',
-                        default=None,
-                        nargs='+',
-                        required='True',
-                        help='Name of the user(s) to be deleted.')
+    parser.add_argument('user-name', help_string = 'Name of the user(s) to be deleted.')
     args = parser.parse_args()
 
     # Configure the debug level
@@ -34,6 +30,11 @@ def main():
 
     # Check version of opinel
     if not check_requirements(os.path.realpath(__file__)):
+        return 42
+
+    # Require at least one user names
+    if not len(args.user_name):
+        printError("Error, you need to provide at least one user name.")
         return 42
 
     # Read creds
@@ -47,3 +48,7 @@ def main():
     # Delete users
     for user in args.user_name:
         delete_user(iam_client, user)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

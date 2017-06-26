@@ -5,9 +5,8 @@ import re
 import os
 import sys
 
-from opinel.services.iam import get_aws_account_id
 from opinel.services.s3 import get_s3_bucket_location
-from opinel.utils.aws import connect_service, build_region_list, handle_truncated_response
+from opinel.utils.aws import connect_service, build_region_list, get_aws_account_id, handle_truncated_response
 from opinel.utils.cli_parser import OpinelArgumentParser
 from opinel.utils.console import configPrintException, printError, printException, printInfo
 from opinel.utils.credentials import read_creds

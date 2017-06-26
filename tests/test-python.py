@@ -190,3 +190,23 @@ class TestPythonRecipesClass:
     def test_awsrecipes_init_sts_session(self):
         print('a')
 
+    def test_awsrecipes_search_cloudtrail_logs(self):
+        pass
+
+    def test_awsrecipes_delete_iam_user(self):
+        pass
+
+    def test_awsrecipes_get_all_ips(self):
+        pass
+    
+    def test_awsrecipes_get_cloudtrail_logs(self):
+        pass
+
+    def test_awsrecipes_create_iam_user(self):
+        pass
+
+    def test_awsrecipes_rotate_my_key(self):
+        pass
+
+    def test_awsrecipes_get_iam_permissions(self):
+        pass
