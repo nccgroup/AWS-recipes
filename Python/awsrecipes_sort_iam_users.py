@@ -1,22 +1,28 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_iam import *
-
-# Import stock packages
-import re
+import os
 import sys
+
+from opinel.utils.aws import connect_service, handle_truncated_response
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printError, printException, printInfo
+from opinel.utils.credentials import read_creds
+from opinel.utils.globals import check_requirements
+from opinel.utils.threads import thread_work
+from opinel.services.iam import create_groups, init_group_category_regex
 
 
 ########################################
 ##### Helpers
 ########################################
 
-def get_group_membership(iam_client, q, params):
+def get_group_membership(q, params):
+    iam_client = params['iam_client']
+    user_info  = params['user_info']
     while True:
         try:
-            user_info, user = q.get()
+            user = q.get()
             user_name = user['UserName']
             groups = iam_client.list_groups_for_user(UserName = user_name)['Groups']
             user_info[user_name] = {}
@@ -39,109 +45,82 @@ def show_status(user_info, total = None, newline = True):
     sys.stdout.flush()
 show_status.total = 0
 
-
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser()
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('common-groups',
+                        default=[],
+                        nargs='+',
+                        help='List of groups each IAM user should belong to.')
+    parser.add_argument('category-groups',
+                        default=[],
+                        nargs='+',
+                        help='List of category groups; each IAM user must belong to one.')
+    parser.add_argument('category-regex',
+                        default=[],
+                        nargs='+',
+                        help='List of regex enabling auto-assigment of category groups.')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
-    # Arguments
-    profile_name = args.profile[0]
-
-    # Initialize and compile the list of regular expression for category groups
-    category_regex = init_iam_group_category_regex(args.category_groups, args.category_regex)
-
-    # Search for AWS credentials
-    credentials = read_creds(profile_name)
+    # Read creds
+    credentials = read_creds(args.profile[0])
     if not credentials['AccessKeyId']:
         return 42
 
-    # Connect to IAM
-    iam_client = connect_iam(credentials)
+    # Connect to IAM APIs
+    iam_client = connect_service('iam', credentials)
     if not iam_client:
         return 42
 
-    # Create the groups
-    if args.create_groups and not args.dry_run:
-        for group in args.common_groups + args.category_groups:
-            try:
-                printInfo('Creating group \'%s\'...' % group)
-                iam_client.create_group(GroupName = group)
-            except Exception as e:
-                printException(e)
+    # Initialize and compile the list of regular expression for category groups
+    category_regex = init_group_category_regex(args.category_groups, args.category_regex)
+
+    # Ensure all default groups exist
+    create_groups(iam_client, args.category_groups + args.common_groups)
 
     # Download IAM users and their group memberships
     printInfo('Downloading group membership information...')
     user_info = {}
-    users = handle_truncated_responses(iam_client.list_users, {}, 'Users')
+    users = handle_truncated_response(iam_client.list_users, {}, [ 'Users' ])['Users']
     show_status(user_info, total = len(users), newline = False)
-    thread_work(iam_client, user_info, users, get_group_membership, num_threads = 30)
+    thread_work(users, get_group_membership, {'iam_client': iam_client, 'user_info': user_info}, num_threads = 30)
     show_status(user_info)
 
-    # Output
-    all_checked_groups = set(args.common_groups + args.category_groups)
-    if args.output_file[0]:
-        try:
-            f = open(args.output_file[0], 'wt')
-            f.write('username, %s\n' % (', '.join(all_checked_groups)))
-        except Exception as e:
-            printException(e)
-
     # Iterate through users
-    test = 0
     for user in user_info:
         printInfo('Checking configuration of \'%s\'...' % user)
-        add_user_to_common_group(iam_client, user_info[user]['groups'], args.common_groups, user, args.force_common_group, user_info, args.dry_run)
-        add_user_to_category_group(iam_client, user_info[user]['groups'], args.category_groups, category_regex, user, user_info, args.dry_run)
-        if args.output_file[0] and f:
-            f.write('%s' % user)
-            for g in all_checked_groups:
-                f.write(', %s' % ('x' if g in user_info[user]['groups'] else ''))
-            f.write('\n')
-    if args.output_file[0] and f:
-        f.close()
+        for group in args.common_groups:
+            if group not in user_info[user]['groups']:
+                printInfo(' - Adding to common group: %s' % group)
+                iam_client.add_user_to_group(UserName = user, GroupName = group)
+        category_found = False
+        for i, regex in enumerate(category_regex):
+            if regex and regex.match(user):
+                category_found = True
+                group = args.category_groups[i]
+                if group not in user_info[user]['groups']:
+                    printInfo(' - Adding to category group: %s' % group)
+                    iam_client.add_user_to_group(UserName = user, GroupName = group)
+            elif not regex:
+                default_group = args.category_groups[i]
+        if not category_found and default_group not in user_info[user]['groups']:
+            printInfo(' - Adding to default category group: %s' % default_group)
+            iam_client.add_user_to_group(UserName = user, GroupName = default_group)
 
-
-########################################
-##### Parse arguments and call main()
-########################################
-
-default_args = read_profile_default_args(parser.prog)
-
-parser.add_argument('--create-groups',
-                    dest='create_groups',
-                    default=set_profile_default(default_args, 'create_groups', False),
-                    action='store_true',
-                    help='Create the default groups if they do not exist')
-parser.add_argument('--category-regex',
-                    dest='category_regex',
-                    default=set_profile_default(default_args, 'category_regex', []),
-                    nargs='+',
-                    help='Regex used to automatically add users to a category group.')
-parser.add_argument('--force-common-group',
-                    dest='force_common_group',
-                    default=set_profile_default(default_args, 'force_common_group', False),
-                    action='store_true',
-                    help='Automatically add users to the common groups.')
-parser.add_argument('--out',
-                    dest='output_file',
-                    default=[ None ],
-                    nargs='+',
-                    help='Name of the output file.')
-
-add_common_argument(parser, default_args, 'dry-run')
-add_iam_argument(parser, default_args, 'common-groups')
-add_iam_argument(parser, default_args, 'category-groups')
-
-args = parser.parse_args()
 
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())
