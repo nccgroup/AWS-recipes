@@ -54,75 +54,9 @@ class TestPythonRecipesClass:
             assert method_name in methods
 
     #
-    # Test aws_cloudtrail_enable_all_regions
-    #
-    def test_aws_cloudtrail_enable_all_regions(self):
-        print('a')
-
-    #
-    # Test aws_cloudtrail_get_logs
-    #
-    def test_aws_cloudtrail_get_logs(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_ec2_empty_default_security_groups(self):
-        print('a')
-        # Add rule in default
-        # Check that rule exists in non-default
-        # Checkthat rule exists in default
-        # run tool
-        # check that rule stil exssis in non default
-        # check that rule is gone in default
-
-    #
-    #
-    #
-    def test_aws_iam_create_assume_role_group(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_iam_create_default_groups(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_iam_create_policy(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_iam_create_user(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_recipes_delete_iam_user(self):
-        print('a')
-
-    #
     #
     #
     def test_awsrecipes_enable_mfa(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_iam_rotate_my_key(self):
-        print('a')
-
-    #
-    #
-    #
-    def test_aws_iam_sort_users(self):
         print('a')
 
     #
@@ -181,17 +115,8 @@ class TestPythonRecipesClass:
     #
     #
     #
-    def test_aws_recipes_get_iam_permissions(self):
-        print('a')
-
-    #
-    #
-    #
     def test_awsrecipes_init_sts_session(self):
         print('a')
-
-    def test_awsrecipes_search_cloudtrail_logs(self):
-        pass
 
     def test_awsrecipes_delete_iam_user(self):
         pass
