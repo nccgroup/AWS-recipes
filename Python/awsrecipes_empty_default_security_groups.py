@@ -1,41 +1,53 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_ec2 import *
-
-# Import stock packages
+import os
 import sys
+
+from opinel.utils.aws import build_region_list, connect_service
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printInfo, printException
+from opinel.utils.credentials import read_creds
+from opinel.utils.globals import check_requirements
 
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser(os.path.basename(__file__))
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('regions')
+    parser.add_argument('partition-name')
+    parser.add_argument('dry-run')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
-    # Arguments
+    # Get profile name
     profile_name = args.profile[0]
-
-    # Initialize the list of regions to work with
-    regions = build_region_list('ec2', args.regions, args.partition_name)
 
     # Search for AWS credentials
     credentials = read_creds(profile_name)
     if not credentials['AccessKeyId']:
         return 42
 
+    # Initialize the list of regions to work with
+    regions = build_region_list('ec2', args.regions, args.partition_name)
+
     # For each region...
     for region in regions:
 
         # Connect to EC2
-        ec2_client = connect_ec2(credentials, region)
+        ec2_client = connect_service('ec2', credentials, region)
         if not ec2_client:
             continue
 
@@ -66,17 +78,5 @@ def main(args):
                     pass
 
 
-########################################
-##### Parse arguments and call main()
-########################################
-
-default_args = read_profile_default_args(parser.prog)
-
-add_common_argument(parser, default_args, 'regions')
-add_common_argument(parser, default_args, 'partition-name')
-add_common_argument(parser, default_args, 'dry-run')
-
-args = parser.parse_args()
-
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())
