@@ -12,8 +12,8 @@ before_script:
     - pip install coveralls
 
 script:
-    - nosetests --with-coverage tests/IAM-policies.py
-    - nosetests --with-coverage tests/test-ptyhon.py
+    - nosetests tests/IAM-policies.py
+    - nosetests tests/test-python.py
 
 after_success:
     - coveralls
