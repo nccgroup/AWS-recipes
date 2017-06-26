@@ -44,6 +44,8 @@ def main():
 
     # Connect to IAM APIs
     iam_client = connect_service('iam', credentials)
+    if not iam_client:
+        return 42
 
     # Delete users
     for user in args.user_name:
