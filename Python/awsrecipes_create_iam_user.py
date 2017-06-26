@@ -16,7 +16,7 @@ except Exception as e:
     _gnupg_available = False
     print('Warning: gnupg not found; generated and downloaded credentials will not be encrypted at rest.')
 
-from opinel.services.iam import create_user, init_iam_group_category_regex, delete_user
+from opinel.services.iam import create_user, init_group_category_regex, delete_user
 from opinel.utils.aws import connect_service
 from opinel.utils.cli_parser import OpinelArgumentParser
 from opinel.utils.console import configPrintException, printError, printException, printInfo, prompt_4_mfa_serial, prompt_4_value, prompt_4_yes_no

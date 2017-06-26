@@ -4,13 +4,13 @@
 import os
 import sys
 
+from opinel.services.iam import create_groups, init_group_category_regex
 from opinel.utils.aws import connect_service, handle_truncated_response
 from opinel.utils.cli_parser import OpinelArgumentParser
 from opinel.utils.console import configPrintException, printError, printException, printInfo
 from opinel.utils.credentials import read_creds
 from opinel.utils.globals import check_requirements
 from opinel.utils.threads import thread_work
-from opinel.services.iam import create_groups, init_group_category_regex
 
 
 ########################################
