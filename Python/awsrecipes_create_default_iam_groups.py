@@ -1,27 +1,47 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# Import opinel
-from opinel.utils import *
-from opinel.utils_iam import *
-
-# Import stock packages
+import os
 import sys
 
+from opinel.utils.aws import connect_service
+from opinel.utils.cli_parser import OpinelArgumentParser
+from opinel.utils.console import configPrintException, printInfo, printException
+from opinel.utils.credentials import read_creds
+from opinel.utils.globals import check_requirements
 
 ########################################
 ##### Main
 ########################################
 
-def main(args):
+def main():
+
+    # Parse arguments
+    parser = OpinelArgumentParser(os.path.basename(__file__))
+    parser.add_argument('debug')
+    parser.add_argument('profile')
+    parser.add_argument('common-groups',
+                        default=[],
+                        nargs='+',
+                        help_string='List of groups each IAM user should belong to.')
+    parser.add_argument('category-groups',
+                        default=[],
+                        nargs='+',
+                        help_string='List of category groups; each IAM user must belong to one.')
+    parser.add_argument('category-regex',
+                        default=[],
+                        nargs='+',
+                        help_string='List of regex enabling auto-assigment of category groups.')
+    args = parser.parse_args()
 
     # Configure the debug level
     configPrintException(args.debug)
 
     # Check version of opinel
-    if not check_opinel_version('1.0.4'):
+    if not check_requirements(os.path.realpath(__file__)):
         return 42
 
-    # Arguments
+    # Get profile name
     profile_name = args.profile[0]
 
     # Search for AWS credentials
@@ -30,26 +50,19 @@ def main(args):
         return 42
 
     # Connect to IAM
-    iam_client = connect_iam(credentials)
+    iam_client = connect_service('iam', credentials)
     if not iam_client:
         return 42
 
-    # Create the groups
-    create_default_groups(iam_client, args.common_groups, args.category_groups, args.dry_run)
+    # Create groups
+    for group in args.category_groups + args.common_groups:
+        try:
+            printInfo('Creating group %s...' % group)
+            iam_client.create_group(GroupName = group)
+        except  Exception as e:
+            if e.response['Error']['Code'] != 'EntityAlreadyExists':
+                printException(e)
 
-
-########################################
-##### Parse arguments and call main()
-########################################
-
-init_parser()
-default_args = read_profile_default_args(parser.prog)
-
-add_common_argument(parser, default_args, 'dry-run')
-add_iam_argument(parser, default_args, 'common-groups')
-add_iam_argument(parser, default_args, 'category-groups')
-
-args = parser.parse_args()
 
 if __name__ == '__main__':
-    sys.exit(main(args))
+    sys.exit(main())
