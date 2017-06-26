@@ -210,3 +210,15 @@ class TestPythonRecipesClass:
 
     def test_awsrecipes_get_iam_permissions(self):
         pass
+
+    def test_awsrecipes_create_default_iam_groups(self):
+        pass
+
+    def test_awsrecipes_empty_default_security_groups(self):
+        pass
+
+    def test_awsrecipes_create_iam_policy(self):
+        pass
+
+    def test_awsrecipes_sort_iam_users(self):
+        pass
