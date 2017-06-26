@@ -21,7 +21,6 @@ from opinel.utils.aws import connect_service
 from opinel.utils.cli_parser import OpinelArgumentParser
 from opinel.utils.console import configPrintException, printError, printException, printInfo, prompt_4_mfa_serial, prompt_4_value, prompt_4_yes_no
 from opinel.utils.credentials import read_creds
-from opinel.utils.fs import read_default_args
 from opinel.utils.globals import check_requirements
 
 
@@ -53,58 +52,43 @@ def gpg_and_write(filename, data, gpg_key, always_trust = False):
         f.write(data)
 
 
-#
-# Returns the argument default value, customized by the user or default programmed value
-#
-
-def set_profile_default(default_args, key, default):
-    return default_args[key] if key in default_args else default
-
-
 def main():
 
     # Parse arguments
-    default_args = read_default_args(__file__)
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.add_argument('user-name', help_string = 'Name of user(s) to be created.')
-    parser.add_argument('group-name', help_string='Name of group(s) the user(s) will belong to.')
-    parser.parser.add_argument('--force-common-group',
-                        dest='force_common_group',
-                        default=set_profile_default(default_args, 'force_common_group', False),
+    parser.add_argument('user-name', help = 'Name of user(s) to be created.')
+    parser.add_argument('group-name', help ='Name of group(s) the user(s) will belong to.')
+    parser.add_argument('force-common-group', 
+                        default=False,
                         action='store_true',
                         help='Automatically add user(s) to the common group(s)')
-    parser.parser.add_argument('--no-mfa',
-                        dest='no_mfa',
-                        default=set_profile_default(default_args, 'no_mfa', False),
+    parser.add_argument('no-mfa',
+                        default=False,
                         action='store_true',
-                        help='Do not configure and enable MFA')
-    parser.parser.add_argument('--no-password',
-                        default=set_profile_default(default_args, 'no_password', False),
+                        help='Do not configure and enable MFA.')
+    parser.add_argument('no-password',
+                        default=False,
                         action='store_true',
                         help='Do not create a password and login')
-    parser.parser.add_argument('--no-access-key',
-                        dest='no_access_key',
-                        default=set_profile_default(default_args, 'no_access_key', False),
+    parser.add_argument('no-access-key',
+                        default=False,
                         action='store_true',
                         help='Do not generate an access key')
-    parser.parser.add_argument('--always-trust',
-                        dest='always_trust',
-                        default=set_profile_default(default_args, 'always_trust', False),
+    parser.add_argument('always-trust',
+                        default=False,
                         action='store_true',
                         help='A not generate an access key')
-    parser.parser.add_argument('--allow-plaintext',
-                        dest='allow_plaintext',
+    parser.add_argument('allow-plaintext',
                         default=False,
                         action='store_true',
                         help='')
-    parser.parser.add_argument('--no-prompt-before-plaintext',
+    parser.add_argument('no-prompt-before-plaintext',
                         dest='prompt_before_plaintext',
                         default=True,
                         action='store_false',
                         help='')
-
     args = parser.parse_args()
 
     # Configure the debug level
@@ -131,8 +115,8 @@ def main():
         return 42
 
     # Initialize and compile the list of regular expression for category groups
-    if 'category_groups' in default_args and 'category_regex' in default_args:
-        category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
+    #if 'category_groups' in default_args and 'category_regex' in default_args:
+    #    category_regex = init_iam_group_category_regex(default_args['category_groups'], default_args['category_regex'])
 
     # Iterate over users
     for user in args.user_name:
@@ -161,15 +145,15 @@ def main():
 
         # Determine the groups Groups
         groups = args.group_name
-        if 'common_groups' in default_args and args.force_common_group:
-            groups += default_args['common_groups']
+        if args.force_common_group:
+            groups += args.common_groups
         # Add user to a category group
 #        if 'category_groups' in default_args and len(default_args['category_groups']) > 0:
 #            add_user_to_category_group(iam_client, args.group_name, default_args['category_groups'], category_regex, user)
 
         # Create the user
         user_data = create_user(iam_client, user, groups, not args.no_password, not args.no_mfa, not args.no_access_key)
-        if 'errors' in user_data:
+        if 'errors' in user_data and len(user_data['errors']) > 0:
             printError('Error doing the following actions:\n%s' % '\n'.join(' - %s' % action for action in user_data['errors']))
 
         # Save data
@@ -191,3 +175,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+

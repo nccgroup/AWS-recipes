@@ -23,15 +23,15 @@ def main():
     parser.add_argument('common-groups',
                         default=[],
                         nargs='+',
-                        help_string='List of groups each IAM user should belong to.')
+                        help='List of groups each IAM user should belong to.')
     parser.add_argument('category-groups',
                         default=[],
                         nargs='+',
-                        help_string='List of category groups; each IAM user must belong to one.')
+                        help='List of category groups; each IAM user must belong to one.')
     parser.add_argument('category-regex',
                         default=[],
                         nargs='+',
-                        help_string='List of regex enabling auto-assigment of category groups.')
+                        help='List of regex enabling auto-assigment of category groups.')
     args = parser.parse_args()
 
     # Configure the debug level

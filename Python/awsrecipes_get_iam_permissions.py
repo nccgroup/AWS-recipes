@@ -195,7 +195,7 @@ def main():
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.add_argument('user-name', help_string = 'Name of the IAM user(s).')
+    parser.add_argument('user-name', help = 'Name of the IAM user(s).')
     parser.parser.add_argument('--all-users',
                                dest='all_users',
                                default=False,

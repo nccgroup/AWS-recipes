@@ -22,7 +22,7 @@ def main():
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.add_argument('user-name', help_string = 'Name of the user(s) to be deleted.')
+    parser.add_argument('user-name', help = 'Name of the user(s) to be deleted.')
     args = parser.parse_args()
 
     # Configure the debug level

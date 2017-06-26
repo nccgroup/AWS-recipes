@@ -168,7 +168,7 @@ def main():
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.add_argument('user-name', help_string = 'Your username (automatically fetched using iam:GetUser if not provided).')
+    parser.add_argument('user-name', help = 'Your username (automatically fetched using iam:GetUser if not provided).')
 
     args = parser.parse_args()
 
