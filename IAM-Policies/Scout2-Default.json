@@ -6,6 +6,7 @@
             "Action": [
                 "cloudformation:DescribeStacks",
                 "cloudformation:GetStackPolicy",
+                "cloudformation:ListStacks",
                 "cloudtrail:DescribeTrails",
                 "cloudtrail:GetTrailStatus",
                 "cloudwatch:DescribeAlarms",
@@ -41,6 +42,7 @@
                 "iam:ListRoles",
                 "iam:ListUserPolicies",
                 "iam:ListUsers",
+                "rds:DescribeDBClusters",
                 "rds:DescribeDBInstances",
                 "rds:DescribeDBParameterGroups",
                 "rds:DescribeDBParameters",
