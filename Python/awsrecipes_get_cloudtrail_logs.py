@@ -149,7 +149,7 @@ def main():
     # Fetch AWS account ID
     if not args.aws_account_id[0]:
         printInfo('Fetching the AWS account ID...')
-        aws_account_id = get_aws_account_id(connect_service('iam', credentials))
+        aws_account_id = get_aws_account_id(credentials)
     else:
         aws_account_id = args.aws_account_id[0]
     global cloudtrail_log_path
