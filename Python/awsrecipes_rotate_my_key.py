@@ -66,19 +66,21 @@ def main():
         printException(e)
         return 42
 
-    # Write the new key
+    # Save the new key
     if credentials['SessionToken']:
         write_creds_to_aws_credentials_file(profile_name + '-nomfa', new_credentials)
-        new_credentials = read_creds(profile_name + '-nomfa')
-        printInfo('Initiating a session with the new access key...')
-        new_credentials = init_sts_session(profile_name, new_credentials)
     else:
         write_creds_to_aws_credentials_file(profile_name, new_credentials)
-        new_credentials = read_creds(profile_name)
-        # Sleep because the access key may not be active server-side...
-        printInfo('Verifying access with the new key...')
-        time.sleep(5)
+    printInfo('Credentials file updated with new access key.')
 
+    printInfo('Verifying access with the new key...')
+    # Sleep because the access key may not be active server-side...
+    time.sleep(5)
+    if credentials['SessionToken']:
+        new_credentials = read_creds(profile_name + '-nomfa')
+        new_credentials = init_sts_session(profile_name, new_credentials)
+    else:
+        new_credentials = read_creds(profile_name)
     # Confirm that it works...
     try:
         new_iam_client = connect_service('iam', new_credentials)
@@ -94,6 +96,7 @@ def main():
             write_creds_to_aws_credentials_file(profile_name, akia_creds)
         return 42
 
+    # Summary of existing access keys
     try:
         show_access_keys(new_iam_client, user_name)
         printInfo('Success !')
