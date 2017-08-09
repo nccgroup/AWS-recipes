@@ -147,3 +147,6 @@ class TestPythonRecipesClass:
 
     def test_awsrecipes_sort_iam_users(self):
         pass
+
+    def test_awsrecipes_enable_organization_forward_events(self):
+        pass
