@@ -7,7 +7,7 @@ import time
 
 from opinel.utils.aws import build_region_list, connect_service, get_aws_account_id, handle_truncated_response
 from opinel.utils.cli_parser import OpinelArgumentParser
-from opinel.utils.console import configPrintException, printInfo, printException, printDebug
+from opinel.utils.console import configPrintException, printInfo, printException, printDebug, printError
 from opinel.utils.credentials import read_creds
 from opinel.utils.globals import check_requirements
 
@@ -21,8 +21,13 @@ def main():
     parser = OpinelArgumentParser()
     parser.add_argument('debug')
     parser.add_argument('profile')
-    parser.add_argument('regions')
+    parser.add_argument('regions', help = 'Regions where stack instances will be created.')
     parser.add_argument('partition-name')
+    parser.parser.add_argument('--stack-set-region',
+                               dest='stack_set_region',
+                               default=None,
+                               required=True,
+                               help='Region where the stack set will be created.')
     args = parser.parse_args()
 
     # Configure the debug level
@@ -40,7 +45,14 @@ def main():
     if not credentials['AccessKeyId']:
         return 42
 
-    # Foo
+    # Validate the stack set region
+    regions = build_region_list('events', args.regions, args.partition_name)
+    if args.stack_set_region not in regions:
+        printError('Error, the stack set region \'%s\' is not valid. Acceptable values are:' % args.stack_set_region)
+        printError(', '.join(regions))
+        return 42
+
+    # Determine the master account id to exclude it from the list of accounts to be configured for event forwarding
     monitoring_account_id = get_aws_account_id(credentials)
 
     # Connect to the AWS Organizations API
@@ -68,7 +80,6 @@ def main():
         printInfo(str(configured_org_account_ids))
 
     # For each region with cloudwatch events, put a permission for each account
-    regions = build_region_list('events', args.regions, args.partition_name)
     printInfo('Adding permissions on the default event buses...')
     for region in regions:
         api_client = connect_service('events', credentials, region)
@@ -83,7 +94,7 @@ def main():
     try:
         stack_set_region = 'us-east-1'
         stack_set_name = 'ConfigureCloudWatchEventsForwarding'
-        api_client = connect_service('cloudformation', credentials, stack_set_region)
+        api_client = connect_service('cloudformation', credentials, args.stack_set_region)
         # TBD:  need for the region where the stack set is created and the regions where the stack instances are created...
         template_path = os.path.join((os.path.dirname(os.path.realpath(__file__))), '../CloudFormationTemplates/ConfigureCloudWatchEventsForwarding.yml')
         with open(template_path, 'rt') as f:
