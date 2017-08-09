@@ -91,7 +91,7 @@ def main():
         printInfo('Restoring your old credentials...')
         # Restore the old key here
         if credentials['SessionToken']:
-            write_creds_to_aws_credentials_file(profile_name + '-nomfa', akia_creds) 
+            write_creds_to_aws_credentials_file(profile_name + '-nomfa', akia_creds)
         else:
             write_creds_to_aws_credentials_file(profile_name, akia_creds)
         return 42
