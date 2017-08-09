@@ -92,11 +92,10 @@ def main():
 
     # Create the stack set
     try:
-        stack_set_region = 'us-east-1'
-        stack_set_name = 'ConfigureCloudWatchEventsForwarding'
+        stack_set_name = 'CloudwatchEventsForwarding'
         api_client = connect_service('cloudformation', credentials, args.stack_set_region)
         # TBD:  need for the region where the stack set is created and the regions where the stack instances are created...
-        template_path = os.path.join((os.path.dirname(os.path.realpath(__file__))), '../CloudFormationTemplates/ConfigureCloudWatchEventsForwarding.yml')
+        template_path = os.path.join((os.path.dirname(os.path.realpath(__file__))), '../CloudFormationTemplates/CloudwatchEventsForwarding.region.yml')
         with open(template_path, 'rt') as f:
             template_body = f.read()
         template_parameters = [ {'ParameterKey': 'EventsMonitoringAccountID', 'ParameterValue': get_aws_account_id(credentials) } ]
