@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Create an SNS topic for security alerts to be published to.
+
+Resources:
+
+  SNSTAlerts:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: AWS Security
+      TopicName: AWSRecipesSecurityAlerts
+
+Outputs:
+
+  AWSRecipesSecurityAlertsTopic:
+    Description: ARN of the AWS Recipes SNS topic where alerts are pushed
+    Value: !Ref SNSTAlerts
+    Export:
+      Name: AWSRecipesSecurityAlertsTopic
+

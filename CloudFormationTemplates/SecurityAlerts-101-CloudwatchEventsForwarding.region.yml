@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
+
 Description: Configure region to send CloudWatch events to the default event bus of the monitoring account ID.
 
 Metadata:
+
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -10,22 +12,22 @@ Metadata:
           - EventsMonitoringAccountID
     ParameterLabels:
       EventsMonitoringAccountID:
-        default: ID of the AWS account receiving the events
-      
+        default: ID of the AWS account receiving the events      
 
 Parameters:
+
   EventsMonitoringAccountID:
     Type: String
     Default: 123456789012
     Description: ID of the AWS account receiving the events.
-
    
 Resources:
+
   ERFwd:
     Type: 'AWS::Events::Rule'
     Properties:
       Description: Forward all CloudWatch events to the event bus of the monitoring account.
-      Name: EventsForwarding
+      Name: AWSRecipesEventsForwarding
       EventPattern:
         account:
           - !Ref 'AWS::AccountId'
@@ -37,3 +39,4 @@ Resources:
               - !Ref 'AWS::Region'
               - !Ref EventsMonitoringAccountID              
               - event-bus/default
+
