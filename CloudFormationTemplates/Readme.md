@@ -8,6 +8,7 @@
 * AccountType : The type of account the template should be deployed in (master or target)
    * Master : Deploy as a stack
    * Target : Deploy as a stack set
+   * Nested : Referenced in another template, not deployed as is
 * ID : Integer for each category, higher IDs may depend on lower ones
 * Name : Additional description of the functionality provided by the template
 * Deployment : The type of resources created by the template
