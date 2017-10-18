@@ -70,7 +70,7 @@ def main():
         profile_name = account['Name'].lower().replace(' ', '_')
         if args.profile_prefix:
             profile_name = '%s-%s' % (args.profile_prefix, profile_name)
-        profile = AWSProfile(filename = aws_config_file, name = profile_name)
+        profile = AWSProfile(filename = aws_config_file, name = profile_name, account_id = account['Id'])
         profile.set_attribute('source_profile', source_profile.name)
         success = False
         for role_name in args.role_name:
@@ -93,7 +93,7 @@ def main():
         profile.write()
 
     for profile in organization_profiles['notready']:
-        printError('Failed to determine a valid role in %s' % profile.name)
+        printError('Failed to determine a valid role in %s (%s)' % (profile.name, profile.account_id))
 
 if __name__ == '__main__':
     sys.exit(main())
