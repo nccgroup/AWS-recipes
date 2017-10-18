@@ -78,6 +78,10 @@ def main():
                         default=False,
                         action='store_true',
                         help='Save all profile\'s IP addresses into a single file.')
+    parser.parser.add_argument('--output-format',
+                               dest='output_format',
+                               default='json',
+                               help='Format of the output (json or csv).')
     args = parser.parse_args()
 
     # Configure the debug level
@@ -252,13 +256,13 @@ def main():
 
         if not args.single_file:
             # Generate an ip-ranges-<profile>.json file
-            save_ip_ranges(profile_name, prefixes, args.force_write, args.debug)
+            save_ip_ranges(profile_name, prefixes, args.force_write, args.debug, args.output_format)
 
       except Exception as e:
         printException(e)
 
     if args.single_file:
-        save_ip_ranges('default', prefixes, args.force_write, args.debug)
+        save_ip_ranges('default', prefixes, args.force_write, args.debug, args.output_format)
 
 if __name__ == '__main__':
     sys.exit(main())
