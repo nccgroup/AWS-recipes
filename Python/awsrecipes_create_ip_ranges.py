@@ -6,10 +6,11 @@ import sys
 
 from opinel.utils.aws import build_region_list, connect_service, get_name, handle_truncated_response
 from opinel.utils.cli_parser import OpinelArgumentParser
-from opinel.utils.console import configPrintException, printInfo, prompt_4_value, prompt_4_yes_no
+from opinel.utils.console import configPrintException, printException, printInfo, prompt_4_value, prompt_4_yes_no
 from opinel.utils.credentials import read_creds
 from opinel.utils.fs import read_ip_ranges, save_ip_ranges
 from opinel.utils.globals import check_requirements
+from opinel.utils.profiles import AWSProfiles
 
 
 ########################################
@@ -67,6 +68,16 @@ def main():
                         default=[],
                         nargs='+',
                         help='Column number matching attributes when headers differ.')
+    parser.parser.add_argument('--public-only',
+                        dest='public_only',
+                        default=False,
+                        action='store_true',
+                        help='Do not fetch VPC and subnet CIDR information.')
+    parser.parser.add_argument('--single-file',
+                        dest='single_file',
+                        default=False,
+                        action='store_true',
+                        help='Save all profile\'s IP addresses into a single file.')
     args = parser.parse_args()
 
     # Configure the debug level
@@ -80,7 +91,16 @@ def main():
     regions = build_region_list('ec2', args.regions, args.partition_name)
 
     # For each profile/environment...
-    for profile_name in args.profile:
+    profile_names = AWSProfiles.list(args.profile)
+    if len(profile_names) == 0:
+        profile_names = args.profile
+
+    # Initialize the list of prefixes
+    prefixes = []
+
+    for profile_name in profile_names:
+
+      try:
 
         # Interactive mode
         if args.interactive:
@@ -97,8 +117,6 @@ def main():
                         for key in prefix:
                             if key not in attributes:
                                 attributes.append(key)
-            else:
-                prefixes = []
 
             # IP prefix does not need to be specified as an attribute
             attributes = [a for a in attributes if a != 'ip_prefix']
@@ -113,9 +131,6 @@ def main():
 
         # Support loading from CSV file
         elif len(args.csv_ip_ranges) > 0:
-
-            # Initalize prefixes
-            prefixes = []
 
             # Load CSV file contents
             for filename in args.csv_ip_ranges:
@@ -161,7 +176,9 @@ def main():
         else:
 
             # Initialize IP addresses
-            printInfo('Fetching public IP information for the \'%s\' environment...' % profile_name)
+            printInfo('Fetching IP information for the \'%s\' environment...' % profile_name)
+            if not args.single_file:
+                prefixes = []
             ip_addresses = {}
 
             # Search for AWS credentials
@@ -178,7 +195,7 @@ def main():
                     continue
 
                 # Get public IP addresses associated with EC2 instances
-                printInfo('...in %s: EC2 instances' % region)
+                printInfo('Fetching EC2 instances...')
                 reservations = handle_truncated_response(ec2_client.describe_instances, {}, ['Reservations'])
                 for reservation in reservations['Reservations']:
                     for i in reservation['Instances']:
@@ -192,7 +209,7 @@ def main():
                                     get_name(i, ip_addresses[eni['Association']['PublicIp']], 'InstanceId')
 
                 # Get all EIPs (to handle unassigned cases)
-                printInfo('...in %s: Elastic IP addresses' % region)
+                printInfo('Fetching Elastic IP addresses...')
                 eips = handle_truncated_response(ec2_client.describe_addresses, {}, ['Addresses'])
                 for eip in eips['Addresses']:
                     instance_id = eip['InstanceId'] if 'InstanceId' in eip else None
@@ -203,12 +220,40 @@ def main():
                     ip_addresses[eip['PublicIp']]['name'] = instance_id
 
                 # Format
-                prefixes = []
                 for ip in ip_addresses:
                     prefixes.append(new_prefix(ip, ip_addresses[ip]))
 
-        # Generate an ip-ranges-<profile>.json file
-        save_ip_ranges(profile_name, prefixes, args.force_write, args.debug)
+                if not args.public_only:
+
+                    # Get all VPCs
+                    printInfo('Fetching VPCs...')
+                    vpcs = ec2_client.describe_vpcs()['Vpcs']
+                    for vpc in vpcs:
+                        prefix = new_prefix(vpc['CidrBlock'], {})
+                        prefix['id'] = vpc['VpcId']
+                        prefix['name'] = get_name(vpc, {}, 'VpcId')
+                        prefix['region'] = region
+                        prefixes.append(prefix)
+
+                    # Get all Subnets
+                    printInfo('Fetching subnets...')
+                    subnets = ec2_client.describe_subnets()['Subnets']
+                    for subnet in subnets:
+                        prefix = new_prefix(subnet['CidrBlock'], {})
+                        prefix['id'] = subnet['SubnetId']
+                        prefix['name'] = get_name(subnet, {}, 'SubnetId')
+                        prefix['region'] = region
+                        prefixes.append(prefix)
+
+        if not args.single_file:
+            # Generate an ip-ranges-<profile>.json file
+            save_ip_ranges(profile_name, prefixes, args.force_write, args.debug)
+
+      except Exception as e:
+        printException(e)
+
+    if args.single_file:
+        save_ip_ranges('default', prefixes, args.force_write, args.debug)
 
 if __name__ == '__main__':
     sys.exit(main())
