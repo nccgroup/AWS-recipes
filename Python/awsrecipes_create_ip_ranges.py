@@ -10,7 +10,7 @@ from opinel.utils.console import configPrintException, printException, printInfo
 from opinel.utils.credentials import read_creds
 from opinel.utils.fs import read_ip_ranges, save_ip_ranges
 from opinel.utils.globals import check_requirements
-from opinel.utils.profiles import AWSProfiles
+from opinel.utils.profiles import AWSProfile, AWSProfiles
 
 
 ########################################
@@ -182,7 +182,8 @@ def main():
             ip_addresses = {}
 
             # Search for AWS credentials
-            credentials = read_creds(profile_name)
+            profile = AWSProfiles.get(profile_name)[0]
+            credentials = profile.get_credentials()
             if not credentials['AccessKeyId']:
                 return 42
 
@@ -221,7 +222,9 @@ def main():
 
                 # Format
                 for ip in ip_addresses:
-                    prefixes.append(new_prefix(ip, ip_addresses[ip]))
+                    prefix = new_prefix(ip, ip_addresses[ip])
+                    prefix['account_id'] = profile.account_id
+                    prefixes.append(prefix)
 
                 if not args.public_only:
 
@@ -233,6 +236,7 @@ def main():
                         prefix['id'] = vpc['VpcId']
                         prefix['name'] = get_name(vpc, {}, 'VpcId')
                         prefix['region'] = region
+                        prefix['account_id'] = profile.account_id
                         prefixes.append(prefix)
 
                     # Get all Subnets
@@ -243,6 +247,7 @@ def main():
                         prefix['id'] = subnet['SubnetId']
                         prefix['name'] = get_name(subnet, {}, 'SubnetId')
                         prefix['region'] = region
+                        prefix['account_id'] = profile.account_id
                         prefixes.append(prefix)
 
         if not args.single_file:
