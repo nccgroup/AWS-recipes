@@ -118,6 +118,9 @@ class TestPythonRecipesClass:
     def test_awsrecipes_init_sts_session(self):
         print('a')
 
+    def test_awsrecipes_configure_organization_profiles(self):
+        pass
+
     def test_awsrecipes_delete_iam_user(self):
         pass
 
