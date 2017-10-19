@@ -16,7 +16,9 @@ class TestPythonRecipesClass:
     # Implement cmp() for tests in Python3
     #
     def cmp(self, a, b):
-        return (a > b) - (a < b)
+        tmp1 = sorted(a, key = lambda x:sorted(x.keys()))
+        tmp2 = sorted(b, key = lambda x:sorted(x.keys()))
+        return (tmp1 > tmp2) - (tmp1 < tmp2)
 
     #
     # Set up
