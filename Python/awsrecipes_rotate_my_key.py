@@ -73,9 +73,9 @@ def main():
         write_creds_to_aws_credentials_file(profile_name, new_credentials)
     printInfo('Credentials file updated with new access key.')
 
-    printInfo('Verifying access with the new key...')
+    printInfo('Waiting 10 seconds before verifying access with the new key...')
     # Sleep because the access key may not be active server-side...
-    time.sleep(5)
+    time.sleep(10)
     if credentials['SessionToken']:
         new_credentials = read_creds(profile_name + '-nomfa')
         new_credentials = init_sts_session(profile_name, new_credentials)
