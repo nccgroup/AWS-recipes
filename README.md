@@ -12,6 +12,11 @@
 
 To follow is a high-level description of the contents of this repository.
 
+### CloudFormation Templates
+
+This folder contains a number of CloudFormation templates that may be used to
+implement or demonstrate functionality.
+
 ### IAM Policies
 
 This folder contains a number of useful IAM policies.
