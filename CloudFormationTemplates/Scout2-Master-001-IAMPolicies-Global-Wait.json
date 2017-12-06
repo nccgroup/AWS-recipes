@@ -1,0 +1,75 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Configure a number of IAM policies for demo Scout2 accounts.",
+    "Resources": {
+         "DenyAllPolicy": {
+             "Type": "AWS::IAM::ManagedPolicy",
+             "Properties": {
+                 "ManagedPolicyName": "DenyAll",
+                 "Description": "Deny all access to AWS services and resources.",
+                 "PolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": {
+                         "Effect": "Deny",
+                         "Action": "*",
+                         "Resource": "*"
+                     }
+                 }
+             }
+         },
+         "Scout2Policy001": {
+             "Type": "AWS::IAM::ManagedPolicy",
+             "Properties": {
+                 "ManagedPolicyName": "Scout2Policy001",
+                 "Description": "Allow Not Actions",
+                 "PolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": {
+                         "Effect": "Allow",
+                         "NotAction": [ "iam:*", "sts:*" ],
+                         "Resource": "*"
+                     }
+                 }
+             }
+         },
+         "Scout2Policy002": {
+             "Type": "AWS::IAM::ManagedPolicy",
+             "Properties": {
+                 "ManagedPolicyName": "Scout2Policy002",
+                 "Description": "Allow STS assume role *",
+                 "PolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": {
+                         "Effect": "Allow",
+                         "Action": [ "sts:assumerole" ],
+                         "Resource": "*"
+                     }
+                 }
+             }
+         },
+         "Scout2Policy003": {
+             "Type": "AWS::IAM::ManagedPolicy",
+             "Properties": {
+                 "ManagedPolicyName": "Scout2Policy003",
+                 "Description": "Allow IAM pass role *",
+                 "PolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": {
+                         "Effect": "Allow",
+                         "Action": [ "iam:passrole" ],
+                         "Resource": "*"
+                     }
+                 }
+             }
+         }
+    },
+    "Outputs": {
+        "DenyAllPolicyOutput": {
+            "Description": "Arn of the DenyAll policy.",
+            "Value": { "Ref": "DenyAllPolicy" },
+            "Export": {
+                "Name": "DenyAllPolicyArn"
+            }
+        }
+    }
+}

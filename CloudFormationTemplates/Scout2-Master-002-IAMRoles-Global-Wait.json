@@ -1,0 +1,213 @@
+{
+    "Description": "",
+    "Resources": {
+        "PhonyRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "PhonyRole",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {"Ref": "AWS::AccountId"}
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ]
+            }
+        },
+        "Scout2Role001": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role001",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "*"
+                            },
+                            "Action": "sts:AssumeRole",
+                            "Condition": {
+                                "Bool": {
+                                    "aws:MultiFactorAuthPresent": "true"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ]
+            }
+        },
+        "Scout2Role002": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role002",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {"Ref": "AWS::AccountId"}
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "InlineDenyAll",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Deny",
+                                "Action": "*",
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2Role003": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role003",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ec2.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ]
+            }
+        },
+        "Scout2Role004": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role004",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {"Ref": "AWS::AccountId"}
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowNotAction",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "NotAction": [ "iam:*", "sts:*" ],
+                                "Resource": "*"
+                            }
+                        }
+                    },
+                ]
+            }
+        },
+        "Scout2Role005": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role005",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {"Ref": "AWS::AccountId"}
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowAssumeRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": "sts:assumerole",
+                                "Resource": "*"
+                            }
+                        }
+                    },
+                ]
+            }
+        },
+        "Scout2Role006": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Scout2Role006",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {"Ref": "AWS::AccountId"}
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowPassRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": "iam:passrole",
+                                "Resource": "*"
+                            }
+                        }
+                    },
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "PhonyRoleOutput": {
+            "Description": "ARN of a phony role that any IAM entity in the account may assume",
+            "Value": { "Fn::GetAtt": [ "PhonyRole", "Arn" ] },
+            "Export": { "Name": "PhonyRoleArn" }
+        }
+    }
+}

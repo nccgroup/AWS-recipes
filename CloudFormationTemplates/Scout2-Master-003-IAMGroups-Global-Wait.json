@@ -1,0 +1,100 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Configure a number of IAM groups for demo Scout2 accounts.",
+    "Resources": {
+        "BlockedUsers": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {
+                "GroupName": "BlockedUsers",
+                "ManagedPolicyArns": [
+                    { "Fn::ImportValue": "DenyAllPolicyArn" }
+                ]
+            }
+        },
+        "Scout2Group001": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {
+                "GroupName": "Scout2Group001",
+                "Policies": [
+                    {
+                        "PolicyName": "AllowAssumeRoleArn",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": "sts:assumerole",
+                                "Resource": { "Fn::ImportValue": "PhonyRoleArn" }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2Group002": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {
+                "GroupName": "Scout2Group002",
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowNotAction",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "NotAction": [ "iam:*", "sts:*" ],
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2Group003": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {
+                "GroupName": "Scout2Group003",
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowPassRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": [ "iam:passrole" ],
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2Group004": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {
+                "GroupName": "Scout2Group004",
+                "ManagedPolicyArns": [
+                    {"Fn::ImportValue" : "DenyAllPolicyArn" }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowAssumeRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": [ "sts:assumerole" ],
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

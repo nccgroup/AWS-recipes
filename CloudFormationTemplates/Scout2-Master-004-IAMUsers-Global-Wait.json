@@ -1,0 +1,170 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Configure a number of IAM users for demo Scout2 accounts.",
+    "Resources": {
+        "Scout2User001": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User001",
+                "Groups": [
+                    "BlockedUsers"
+                ]
+            }
+        },
+        "Scout2User001AccessKey001": {
+           "Type": "AWS::IAM::AccessKey",
+           "Properties": {
+              "UserName": "Scout2User001"
+           }
+        },
+        "Scout2User001AccessKey002": {
+           "Type": "AWS::IAM::AccessKey",
+           "Properties": {
+              "UserName": "Scout2User001"
+           }
+        },
+        "Scout2User002": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User002",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "LoginProfile": {
+                    "Password": "ChangeMe123!",
+                }
+            }
+        },
+        "Scout2User003": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User003",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::179374595322:policy/DenyAll"
+                ]
+            }
+        },
+        "Scout2User004": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User004",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineDenyAll",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Deny",
+                                "Action": "*",
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2user005": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User005",
+                "Groups": [
+                    "BlockedUsers"
+                ]
+            }
+        },
+        "Scout2User005AccessKey001": {
+           "Type": "AWS::IAM::AccessKey",
+           "Properties": {
+              "UserName": "Scout2User005"
+           }
+        },
+        "Scout2User005AccessKey002": {
+           "Type": "AWS::IAM::AccessKey",
+           "Properties": {
+              "Status": "Inactive",
+              "UserName": "Scout2User005"
+           }
+        },
+        "Scout2user006": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User006",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowAssumeRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": [ "sts:assumerole" ],
+                                "Resource": "*"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Scout2user007": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User007",
+                "Groups": [
+                    "BlockedUsers"
+                ]
+            }
+        },
+        "Scout2user008": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User008",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowNotAction",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "NotAction": [ "iam:*", "sts:*" ],
+                                "Resource": "*"
+                            }
+                        }
+                    },
+                ]
+            }
+        },
+        "Scout2user009": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": "Scout2User009",
+                "Groups": [
+                    "BlockedUsers"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "InlineAllowPassRoleStar",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+                                "Effect": "Allow",
+                                "Action": "iam:passrole",
+                                "Resource": "*"
+                            }
+                        }
+                    },
+                ]
+            }
+        }
+    }
+}
