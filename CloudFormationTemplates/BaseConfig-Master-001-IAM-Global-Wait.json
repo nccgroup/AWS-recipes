@@ -1,0 +1,177 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Configure a number of IAM policies that may be helpful in many accounts.",
+    "Resources": {
+        "SelfManagementPasswordMFA": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "Allows IAM users to manage their own password, access keys, and MFA devices.",
+                "ManagedPolicyName": "SelfManagement-PasswordMFA",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "iam:*Password",
+                                "iam:*MFADevice*",
+                                "iam:UpdateLoginProfile"
+                            ],
+                            "Resource": { "Fn::Join" : [ ":", [ "arn", "aws", "iam", "", { "Ref": "AWS::AccountId" }, "user/${aws:username}" ] ] }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "iam:CreateVirtualMFADevice",
+                                "iam:DeleteVirtualMFADevice"
+                            ],
+                            "Resource": { "Fn::Join" : [ ":", [ "arn", "aws", "iam", "", { "Ref": "AWS::AccountId" }, "mfa/${aws:username}" ] ] }
+                        }
+                    ]
+                }
+            }
+        },
+        "SelfManagementAccessKey": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "Allows IAM users to manage their own password, access keys, and MFA devices.",
+                "ManagedPolicyName": "SelfManagement-AccessKey",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "iam:*AccessKey*"
+                            ],
+                            "Resource": { "Fn::Join" : [ ":", [ "arn", "aws", "iam", "", { "Ref": "AWS::AccountId" }, "user/${aws:username}" ] ] }
+                        }
+                    ]
+                }
+            }
+        },
+        "EnforceMFA8hours": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "Enforce MFA except for several actions used during the IAM user onboarding process.",
+                "ManagedPolicyName": "EnforceMFA8hours",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Deny",
+                            "NotAction": [
+                                "iam:ChangePassword",
+                                "iam:CreateVirtualMFADevice",
+                                "iam:EnableMFADevice",
+                                "iam:ListMFADevices",
+                                "iam:ListUsers",
+                                "iam:ListVirtualMFADevices"
+                            ],
+                            "Resource": "*",
+                            "Condition": {
+                                "Null": {
+                                    "aws:MultiFactorAuthAge": "true"
+                                }
+                            }
+                        },
+                        {
+                            "Effect": "Deny",
+                            "NotAction": [
+                                "iam:ChangePassword",
+                                "iam:CreateVirtualMFADevice",
+                                "iam:EnableMFADevice",
+                                "iam:ListMFADevices",
+                                "iam:ListUsers",
+                                "iam:ListVirtualMFADevices"
+                            ],
+                            "Resource": "*",
+                            "Condition": {
+                                "NumericGreaterThan": {
+                                    "aws:MultiFactorAuthAge": "28800"
+                                }
+                            }
+                        }
+                    ]
+
+                }
+            }
+        },
+        "EnforceTLS": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "Deny all actions unless TLS was used to access the API.",
+                "ManagedPolicyName": "EnforceTLS",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Deny",
+                            "Action": "*",
+                            "Resource": "*",
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": "false"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "AllUsers": {
+            "Type": "AWS::IAM::Group",
+            "DependsOn": [
+                "SelfManagementAccessKey"
+            ],
+            "Properties": {
+                "GroupName": "AllUsers",
+                "ManagedPolicyArns": [
+                    { "Ref": "SelfManagementAccessKey" }
+                ]
+            }
+        },
+        "AllHumans": {
+            "Type": "AWS::IAM::Group",
+            "DependsOn": [
+                "SelfManagementPasswordMFA",
+                "EnforceMFA8hours"
+            ],
+            "Properties": {
+                "GroupName": "AllHumans",
+                "ManagedPolicyArns": [
+                    { "Ref": "SelfManagementPasswordMFA" },
+                    { "Ref": "EnforceMFA8hours" }
+                ]
+            }
+        },
+        "AllServices": {
+            "Type": "AWS::IAM::Group",
+            "DependsOn": [
+                "EnforceTLS"
+            ],
+            "Properties": {
+                "GroupName": "AllServices",
+                "ManagedPolicyArns": [
+                    { "Ref": "EnforceTLS" }
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "EnforceMFA8hoursOutput": {
+            "Description": "Arn of the IAM policy that enforces 8-hour MFA sessions.",
+            "Value": { "Ref": "EnforceMFA8hours" },
+            "Export": {
+                "Name": "EnforceMFA8hoursPolicyArn"
+            }
+        },
+        "EnforceTLSOutput": {
+            "Description": "Arn of the IAM policy that enforces TLS.",
+            "Value": { "Ref": "EnforceTLS" },
+            "Export": {
+                "Name": "EnforceTLSPolicyArn"
+            }
+        }
+    }
+}
