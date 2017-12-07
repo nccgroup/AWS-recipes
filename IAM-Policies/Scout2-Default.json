@@ -1,8 +1,6 @@
 {
-    "Version": "2012-10-17",
     "Statement": [
         {
-            "Effect": "Allow",
             "Action": [
                 "cloudformation:DescribeStacks",
                 "cloudformation:GetStackPolicy",
@@ -11,28 +9,29 @@
                 "cloudtrail:GetTrailStatus",
                 "cloudwatch:DescribeAlarms",
                 "directconnect:DescribeConnections",
-                "ec2:DescribeSnapshots",
-                "ec2:DescribeSnapshotAttribute",
-                "ec2:DescribeVolumes",
-                "ec2:DescribeVpnGateways",
-                "ec2:DescribeVpnConnections",
                 "ec2:DescribeCustomerGateways",
                 "ec2:DescribeFlowLogs",
                 "ec2:DescribeInstances",
                 "ec2:DescribeNetworkAcls",
+                "ec2:DescribeNetworkInterfaces",
                 "ec2:DescribeRouteTables",
                 "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSnapshotAttribute",
+                "ec2:DescribeSnapshots",
                 "ec2:DescribeSubnets",
-                "ec2:DescribeVpcs",
+                "ec2:DescribeVolumes",
                 "ec2:DescribeVpcPeeringConnections",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeVpnConnections",
+                "ec2:DescribeVpnGateways",
                 "elasticache:DescribeCacheClusters",
                 "elasticache:DescribeCacheSubnetGroups",
                 "elasticfilesystem:DescribeFileSystems",
-                "elasticfilesystem:DescribeMountTargets",
                 "elasticfilesystem:DescribeMountTargetSecurityGroups",
+                "elasticfilesystem:DescribeMountTargets",
                 "elasticfilesystem:DescribeTags",
-                "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeSSLPolicies",
                 "elasticmapreduce:DescribeCluster",
                 "elasticmapreduce:ListClusters",
@@ -57,6 +56,7 @@
                 "iam:ListRoles",
                 "iam:ListUserPolicies",
                 "iam:ListUsers",
+                "lambda:ListFunctions",
                 "rds:DescribeDBClusters",
                 "rds:DescribeDBInstances",
                 "rds:DescribeDBParameterGroups",
@@ -79,6 +79,7 @@
                 "s3:GetBucketVersioning",
                 "s3:GetBucketWebsite",
                 "s3:ListAllMyBuckets",
+                "ses:GetIdentityDkimAttributes",
                 "ses:GetIdentityPolicies",
                 "ses:ListIdentities",
                 "ses:ListIdentityPolicies",
@@ -88,7 +89,9 @@
                 "sqs:GetQueueAttributes",
                 "sqs:ListQueues"
             ],
+            "Effect": "Allow",
             "Resource": "*"
         }
-    ]
+    ],
+    "Version": "2012-10-17"
 }
