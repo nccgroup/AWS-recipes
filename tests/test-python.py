@@ -155,3 +155,9 @@ class TestPythonRecipesClass:
 
     def test_awsrecipes_enable_organization_forward_events(self):
         pass
+
+    def test_awsrecipes_create_cloudformation_stack(self):
+        pass
+
+    def test_awsrecipes_deploy_stacks(self):
+        pass
